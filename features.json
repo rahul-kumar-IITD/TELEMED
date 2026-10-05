@@ -10,8 +10,8 @@
       "Query sqlite_master for table names",
       "Assert all nine table names are present"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -32,8 +32,8 @@
       "Execute DELETE on each and assert the same",
       "Re-read rows and assert they are unchanged"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -54,8 +54,8 @@
       "Read via the repository and assert Decimal('500.00')",
       "Grep money modules and assert no float annotations or float() calls"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -75,8 +75,8 @@
       "Execute PRAGMA journal_mode and assert 'wal'",
       "Execute PRAGMA busy_timeout and assert >= 5000"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -96,8 +96,8 @@
       "Insert an appointment with status 'FOO' and assert IntegrityError",
       "Insert valid values and assert success"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -117,8 +117,8 @@
       "Poll GET /health until the first response",
       "Assert status 200, body status 'ok' and elapsed time < 1s from listening"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -138,8 +138,8 @@
       "GET /health with no header and assert a UUID-format value",
       "GET /health with an over-long or illegal-character value and assert a generated UUID"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -159,8 +159,8 @@
       "Parse every log line as JSON and assert correlation_id exists",
       "Assert the unique email and name strings appear in no log line"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -181,8 +181,8 @@
       "Simulate OperationalError 'database is locked' and assert 503",
       "Assert the 503 body contains no SQL or stack trace text"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -202,8 +202,8 @@
       "Start with PROVIDER_TIMEZONE=Asia/Kolkata and assert it is applied",
       "Start with PROVIDER_TIMEZONE=Mars/Base and assert a non-zero exit with the variable name in the message"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2776,8 +2776,8 @@
       "Modify one revision in a scratch copy and assert the check fails",
       "Assert new schema changes exist only as new revisions"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null
   },

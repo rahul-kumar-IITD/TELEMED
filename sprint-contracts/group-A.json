@@ -1,0 +1,63 @@
+{
+  "group": "A",
+  "stories": ["E1-S1", "E1-S2"],
+  "features": ["F001","F002","F003","F004","F005","F006","F007","F008","F009","F010","F133"],
+  "verification_mode": "local",
+  "start_command": "cd backend && uv run uvicorn telemed.api.app:create_app --factory --host 127.0.0.1 --port 8000",
+  "start_note": "npm start does not exist in group A (created by E5-S1); start the backend directly with uvicorn and capture stdout/stderr to a file for log checks.",
+  "backend_url": "http://localhost:8000",
+  "api_checks": [
+    {"id": "A-API-1", "story": "E1-S2", "ac": 2, "feature": "F006", "note": "AC1: 200 body exactly {\"status\":\"ok\"}", "method": "GET", "path": "/health", "expect_status": 200, "expect_body": {"status": "ok"}, "max_response_seconds": 1},
+    {"id": "A-API-1b", "story": "E1-S2", "ac": 1, "feature": "F006", "note": "AC1 startup timing: launch uvicorn, poll /health; first 200 must arrive within 1s of the process listening", "expect_status": 200, "max_seconds_after_listening": 1},
+    {"id": "A-API-2", "story": "E1-S2", "ac": 2, "feature": "F007", "method": "GET", "path": "/health", "headers": {"X-Request-ID": "11111111-1111-4111-8111-111111111111"}, "expect_status": 200, "expect_response_header": {"X-Request-ID": "11111111-1111-4111-8111-111111111111"}},
+    {"id": "A-API-2b", "story": "E1-S2", "ac": 2, "feature": "F007", "note": "valid non-UUID value matching ^[A-Za-z0-9._-]{1,64}$ is echoed", "method": "GET", "path": "/health", "headers": {"X-Request-ID": "abc.DEF_123-x"}, "expect_status": 200, "expect_response_header": {"X-Request-ID": "abc.DEF_123-x"}},
+    {"id": "A-API-3", "story": "E1-S2", "ac": 2, "feature": "F007", "method": "GET", "path": "/health", "headers": {"X-Request-ID": "not a valid id!!"}, "expect_status": 200, "expect_response_header_uuid": "X-Request-ID", "expect_header_not_equal": "not a valid id!!"},
+    {"id": "A-API-3b", "story": "E1-S2", "ac": 2, "feature": "F007", "note": "65-character otherwise-valid value is invalid and replaced by a UUID", "method": "GET", "path": "/health", "headers": {"X-Request-ID": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}, "expect_status": 200, "expect_response_header_uuid": "X-Request-ID"},
+    {"id": "A-API-4", "story": "E1-S2", "ac": 2, "feature": "F007", "method": "GET", "path": "/health", "expect_status": 200, "expect_response_header_uuid": "X-Request-ID"},
+    {"id": "A-API-5", "story": "E1-S2", "ac": 2, "feature": "F009", "note": "header present on error responses too", "method": "GET", "path": "/no-such-route", "expect_status": 404, "expect_response_header_present": "X-Request-ID"},
+    {"id": "A-API-5b", "story": "E1-S2", "ac": 2, "feature": "F007", "note": "header present on 405", "method": "POST", "path": "/health", "expect_status": 405, "expect_response_header_present": "X-Request-ID"},
+    {"id": "A-API-5c", "story": "E1-S2", "ac": 3, "feature": "F008", "note": "live log check: send POST /health with X-Request-ID=log-check-1 and JSON body {\"email\":\"phi.person@example.test\",\"full_name\":\"Zebediah Quillfeather\",\"text\":\"secret note text 9137\"}; then read captured uvicorn stdout. Every non-empty log line parses as JSON, lines for the request contain correlation_id == log-check-1, and none of the email, name or note text appears anywhere in the log output.", "expect": "all lines valid JSON; correlation_id present; zero PHI substrings"},
+    {"id": "A-API-6", "story": "E1-S2", "ac": 4, "feature": "F009", "note": "409 for SlotUnavailableException and InvalidAppointmentStateException, 422 for naive datetime and malformed input, 503 with generic body on SQLite lock timeout", "command": "cd backend && uv run pytest tests/integration/test_error_mapping.py tests/integration/test_health.py tests/integration/test_request_id.py -q", "expect_exit_code": 0},
+    {"id": "A-API-7", "story": "E1-S2", "ac": 3, "feature": "F008", "command": "cd backend && uv run pytest tests/architecture/test_no_phi_in_logs.py -q", "expect_exit_code": 0},
+    {"id": "A-API-8", "story": "E1-S2", "ac": 5, "feature": "F010", "note": "defaults (PROVIDER_TIMEZONE=UTC), env loading of JWT lifetime, database path, busy timeout", "command": "cd backend && uv run pytest tests/unit/test_settings.py -q", "expect_exit_code": 0},
+    {"id": "A-API-9a", "story": "E1-S1", "ac": 2, "feature": "F002", "command": "cd backend && uv run pytest tests/architecture/test_append_only_triggers.py -q", "expect_exit_code": 0, "note": "UPDATE and DELETE rejected on patient_profile_versions, appointment_events, consultation_notes; row unchanged"},
+    {"id": "A-API-9b", "story": "E1-S1", "ac": 3, "feature": "F133", "command": "cd backend && uv run pytest tests/unit/test_money.py -q", "expect_exit_code": 0, "note": "Decimal('500.00') -> 50000 -> Decimal('500.00')"},
+    {"id": "A-API-9c", "story": "E1-S1", "ac": 4, "feature": "F004", "command": "cd backend && uv run pytest tests/architecture/test_pragmas.py -q", "expect_exit_code": 0, "note": "every new connection: journal_mode wal, busy_timeout >= 5000"},
+    {"id": "A-API-9d", "story": "E1-S1", "ac": 5, "feature": "F005", "command": "cd backend && uv run pytest tests/architecture/test_check_constraints.py -q", "expect_exit_code": 0, "note": "bad slot/appointment status rejected by CHECK"},
+    {"id": "A-API-9e", "story": "E1-S1", "ac": 6, "feature": "F003", "command": "cd backend && uv run pytest tests/architecture/test_migrations_append_only.py -q", "expect_exit_code": 0, "note": "committed revisions unmodified/undeleted; no migration drops or rewrites rows of append-only tables"},
+    {"id": "A-API-10", "story": "E1-S1", "ac": 1, "feature": "F001", "note": "fresh empty sqlite file: uv run alembic upgrade head, then SELECT name FROM sqlite_master WHERE type='table' must include users, patient_profiles, patient_profile_versions, doctor_profiles, availability_templates, slots, appointments, appointment_events, consultation_notes", "expect_exit_code": 0},
+    {"id": "A-API-10b", "story": "E1-S1", "ac": 2, "feature": "F002", "note": "independent of pytest: on the alembic-migrated DB insert a row into each of the three append-only tables, run UPDATE and DELETE via sqlite3, expect an error each time and row unchanged", "expect": "6 statements rejected; rows unchanged"},
+    {"id": "A-API-11", "story": "E1-S2", "ac": 5, "feature": "F010", "command": "cd backend && PROVIDER_TIMEZONE=Not/AZone uv run uvicorn telemed.api.app:create_app --factory", "expect": "process aborts non-zero; stderr names PROVIDER_TIMEZONE"}
+  ],
+  "playwright_checks": [],
+  "design_checks": [],
+  "architecture_checks": {
+    "files_must_exist": [
+      "backend/alembic/versions/0001_initial_schema.py",
+      "backend/alembic/versions.lock.json",
+      "backend/tests/unit/test_money.py",
+      "backend/tests/unit/test_settings.py",
+      "backend/tests/architecture/test_append_only_triggers.py",
+      "backend/tests/architecture/test_pragmas.py",
+      "backend/tests/architecture/test_check_constraints.py",
+      "backend/tests/architecture/test_migrations_append_only.py",
+      "backend/tests/architecture/test_no_phi_in_logs.py",
+      "backend/tests/integration/test_health.py",
+      "backend/tests/integration/test_request_id.py",
+      "backend/tests/integration/test_error_mapping.py"
+    ],
+    "files_must_not_exist": [],
+    "content_rules": [
+      "E1-S1 AC3: no float annotation or float() call in fee/money code paths (types/money.py, repository/mappers.py, fee columns in repository/models.py)",
+      "E1-S1 AC6: no existing alembic revision modified (hash matches versions.lock.json)"
+    ]
+  },
+  "review_notes": [
+    "Removed A-API-12 (80% coverage gate): not an acceptance criterion of E1-S1 or E1-S2.",
+    "Removed generic content_rules (print/console.log, secrets, file/function size, mypy/ruff) and layer_rules: no AC in E1-S1/E1-S2 requires them. Run them only if mandated by project-level gates outside this contract.",
+    "Trimmed files_must_exist to alembic artifacts and test files tied to ACs; implementation file names are not ACs.",
+    "Replaced combined A-API-9 with one check per E1-S1 AC (2-6); A-API-10 retained for AC1; added A-API-10b as an independent raw-sqlite trigger check.",
+    "Added A-API-1b (AC1 startup timing), A-API-2b/3b (X-Request-ID boundary cases), A-API-5b (header on 405), A-API-5c (live JSON log + no-PHI check, AC3).",
+    "start_command changed from npm start to direct uvicorn; A-API-11 uses uv run for consistency."
+  ]
+}
