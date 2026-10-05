@@ -5,7 +5,10 @@ from pydantic import ValidationError
 from telemed.config.settings import Settings, load_settings
 from telemed.service.bootstrap import bootstrap
 
-_VARS = ("PROVIDER_TIMEZONE", "JWT_LIFETIME_MINUTES", "DATABASE_PATH", "BUSY_TIMEOUT_MS")
+_VARS = (
+    "PROVIDER_TIMEZONE", "JWT_LIFETIME_MINUTES", "DATABASE_PATH", "BUSY_TIMEOUT_MS",
+    "JWT_SECRET", "VIDEO_BASE_URL",
+)
 
 
 @pytest.fixture(autouse=True)
@@ -54,4 +57,17 @@ def test_out_of_range_values_rejected(
 ) -> None:
     monkeypatch.setenv(name, value)
     with pytest.raises(ValidationError):
+        load_settings()
+
+
+def test_jwt_secret_default_is_long_enough_and_hidden() -> None:
+    settings = load_settings()
+    assert len(settings.jwt_secret.get_secret_value().encode()) >= 32
+    assert settings.video_base_url == "https://video.example.test/visit"
+    assert settings.jwt_secret.get_secret_value() not in repr(settings)
+
+
+def test_short_jwt_secret_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("JWT_SECRET", "too-short")
+    with pytest.raises(ValidationError, match="JWT_SECRET"):
         load_settings()

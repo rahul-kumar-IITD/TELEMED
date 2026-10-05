@@ -9,13 +9,17 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from telemed.service import bootstrap
 from telemed.types.errors import (
     DomainError,
+    EmailAlreadyRegisteredException,
     InvalidAppointmentStateException,
+    InvalidCredentialsException,
     SlotUnavailableException,
 )
 
 _DOMAIN: dict[type[DomainError], tuple[int, str]] = {
     SlotUnavailableException: (409, "That slot is no longer available."),
     InvalidAppointmentStateException: (409, "That change is not allowed for this appointment."),
+    EmailAlreadyRegisteredException: (409, "That email is already registered."),
+    InvalidCredentialsException: (401, "Invalid email or password."),
 }
 _HTTP_CODES = {
     401: "UNAUTHENTICATED",

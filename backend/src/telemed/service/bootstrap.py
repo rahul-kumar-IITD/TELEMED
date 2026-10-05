@@ -2,7 +2,7 @@
 import logging
 import sqlite3
 from contextvars import Token
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from sqlalchemy.exc import OperationalError
 
@@ -21,6 +21,8 @@ class Runtime:
     jwt_lifetime_minutes: int
     database_path: str
     busy_timeout_ms: int
+    video_base_url: str
+    jwt_secret: str = field(repr=False)
 
     @classmethod
     def from_settings(cls, settings: Settings) -> "Runtime":
@@ -29,6 +31,8 @@ class Runtime:
             jwt_lifetime_minutes=settings.jwt_lifetime_minutes,
             database_path=settings.database_path,
             busy_timeout_ms=settings.busy_timeout_ms,
+            video_base_url=settings.video_base_url,
+            jwt_secret=settings.jwt_secret.get_secret_value(),
         )
 
 

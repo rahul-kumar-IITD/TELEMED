@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 
-from telemed.types.enums import AppointmentStatus, Role, SlotStatus
+from telemed.types.enums import AppointmentStatus, Gender, Role, SlotStatus
 from telemed.types.ids import AppointmentId, SlotId, UserId
 
 
@@ -49,3 +49,35 @@ class Appointment:
     fee: Decimal
     created_at: datetime
     updated_at: datetime
+
+
+@dataclass(frozen=True)
+class ProfileData:
+    """Patient contact/profile fields captured at registration (profile version content)."""
+
+    full_name: str
+    age: int
+    gender: Gender
+    phone: str
+
+
+@dataclass(frozen=True)
+class AccessToken:
+    access_token: str
+    token_type: str
+    expires_in: int
+    expires_at: datetime
+
+
+@dataclass(frozen=True)
+class LoginResult:
+    token: AccessToken
+    user_id: UserId
+    role: Role
+
+
+@dataclass(frozen=True)
+class TokenClaims:
+    user_id: UserId
+    role: str
+    expires_at: datetime

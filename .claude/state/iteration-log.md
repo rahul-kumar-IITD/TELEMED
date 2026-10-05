@@ -33,3 +33,6 @@
 - Phase 1 (Independent): E1-S1 (types, repository, alembic, tests), E1-S2 (config, service/bootstrap, api, tests) - no Produces/Consumes between them
 - Phase 2: none
 - Phase 3 (Integrators): generator owns shared file backend/pyproject.toml (created once, used by both stories)
+
+## Group B - PASS (lean) 2026-10-06
+E1-S3, E2-S1, E3-S1 implemented; gates 1-5 green; coverage 100%; new deps argon2-cffi, PyJWT.
