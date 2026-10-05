@@ -42,3 +42,19 @@ coverage: 100%
 learned_rules: 0
 blocked_stories: none
 next_action: Run /auto --mode lean --group C (propose sprint contract for group C)
+
+=== Session 3 ===
+date: 2026-10-06
+mode: lean
+groups_completed: [A, B, C]
+groups_remaining: [D, E, F, G, H, I, J, K]
+current_group: D (not started)
+current_stories: [E1-S5, E2-S2, E5-S1]
+sprint_contract: sprint-contracts/group-C.json (group C complete)
+last_commit: see git log "feat: implement group C"
+features_passing: 33 / 136
+coverage: 100%
+learned_rules: 0
+blocked_stories: none
+user_requested_additions: C-UR-1 (NFR-04, from user security review): removed fixed default DEV_JWT_SECRET; JWT_SECRET must come from env; startup refused when missing or equal to old dev value unless APP_ENV=dev; dev/tests get random per-process secret; 32-byte minimum kept; .env.example JWT_SECRET blank, APP_ENV=dev added; specs/design/deployment.md updated. Beyond E1-S4 criteria; no features.json entry.
+next_action: Run /auto --mode lean --group D (propose sprint contract for group D)

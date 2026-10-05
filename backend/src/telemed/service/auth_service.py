@@ -6,9 +6,16 @@ from telemed.repository import users_repo
 from telemed.service import profile_service, security
 from telemed.service.unit_of_work import UnitOfWork
 from telemed.types import domain
-from telemed.types.domain import LoginResult, ProfileData
+from telemed.types.domain import LoginResult, ProfileData, UserView
 from telemed.types.enums import Role
-from telemed.types.errors import EmailAlreadyRegisteredException, InvalidCredentialsException
+from telemed.types.errors import (
+    EmailAlreadyRegisteredException,
+    InvalidCredentialsException,
+    InvalidTokenError,
+)
+from telemed.types.ids import UserId
+
+_MAX_USER_ID = 2**63 - 1
 
 _logger = logging.getLogger("telemed.auth")
 
@@ -52,3 +59,22 @@ class AuthService:
         )
         _logger.info("login_succeeded", extra={"user_id": found.user.user_id})
         return LoginResult(token=token, user_id=found.user.user_id, role=found.user.role)
+
+    def authenticate(self, token: str) -> domain.User:
+        """Validate the bearer token, then load the CURRENT user row on every call.
+
+        The role comes from users.role (never the token claim); unknown or deactivated users
+        raise InvalidTokenError exactly like a bad token. Nothing is cached between requests.
+        """
+        claims = security.decode_token(token, self._jwt_secret, self._clock.now())
+        if not 0 < claims.user_id <= _MAX_USER_ID:
+            raise InvalidTokenError("invalid token")
+        with self._uow.read() as session:
+            user = users_repo.find_by_id(session, UserId(claims.user_id))
+        if user is None or not user.active:
+            raise InvalidTokenError("invalid token")
+        return user
+
+    def describe(self, user: domain.User) -> UserView:
+        with self._uow.read() as session:
+            return UserView(user=user, full_name=users_repo.find_full_name(session, user))

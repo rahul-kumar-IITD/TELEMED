@@ -12,6 +12,7 @@ from telemed.types.errors import (
     EmailAlreadyRegisteredException,
     InvalidAppointmentStateException,
     InvalidCredentialsException,
+    NotFoundException,
     SlotUnavailableException,
 )
 
@@ -20,6 +21,7 @@ _DOMAIN: dict[type[DomainError], tuple[int, str]] = {
     InvalidAppointmentStateException: (409, "That change is not allowed for this appointment."),
     EmailAlreadyRegisteredException: (409, "That email is already registered."),
     InvalidCredentialsException: (401, "Invalid email or password."),
+    NotFoundException: (404, "Resource not found."),
 }
 _HTTP_CODES = {
     401: "UNAUTHENTICATED",

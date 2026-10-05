@@ -23,5 +23,11 @@ class InvalidCredentialsException(DomainError):  # noqa: N818 - mirrors the othe
     code = "INVALID_CREDENTIALS"
 
 
+class NotFoundException(DomainError):  # noqa: N818 - mirrors the other codes
+    """Object missing or not visible to the caller; the two cases are indistinguishable."""
+
+    code = "NOT_FOUND"
+
+
 class InvalidTokenError(Exception):
     """A bearer token is malformed, expired or not signed with our key."""

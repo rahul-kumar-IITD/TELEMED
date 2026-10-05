@@ -1,5 +1,7 @@
 """FastAPI dependency providers. Every provider is overridable via `dependency_overrides`."""
-from fastapi import Depends, Request
+from collections.abc import Callable
+
+from fastapi import Depends, HTTPException, Request
 
 from telemed.service.auth_service import AuthService
 from telemed.service.container import Container
@@ -9,6 +11,9 @@ from telemed.service.integrations.interfaces import (
     PrescriptionService,
     VideoService,
 )
+from telemed.types import domain
+from telemed.types.enums import Role
+from telemed.types.errors import InvalidTokenError
 
 
 def get_container(request: Request) -> Container:
@@ -38,3 +43,33 @@ def get_notification_service(
     container: Container = Depends(get_container),
 ) -> NotificationService:
     return container.notification
+
+
+def _unauthenticated() -> HTTPException:
+    return HTTPException(status_code=401, headers={"WWW-Authenticate": "Bearer"})
+
+
+def get_current_user(
+    request: Request, service: AuthService = Depends(get_auth_service)
+) -> domain.User:
+    """401 for any missing/bad/expired token or unknown/inactive user; role is read from the DB."""
+    scheme, _, token = request.headers.get("authorization", "").partition(" ")
+    token = token.strip()
+    if scheme.lower() != "bearer" or not token:
+        raise _unauthenticated()
+    try:
+        return service.authenticate(token)
+    except InvalidTokenError:
+        raise _unauthenticated() from None
+
+
+def require_roles(*roles: Role) -> Callable[[domain.User], domain.User]:
+    """Dependency factory: 403 unless the authenticated user's stored role is listed."""
+    allowed = frozenset(roles)
+
+    def dependency(user: domain.User = Depends(get_current_user)) -> domain.User:
+        if user.role not in allowed:
+            raise HTTPException(status_code=403)
+        return user
+
+    return dependency

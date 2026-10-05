@@ -81,3 +81,11 @@ class TokenClaims:
     user_id: UserId
     role: str
     expires_at: datetime
+
+
+@dataclass(frozen=True)
+class UserView:
+    """A user plus the display name shown by GET /api/auth/me."""
+
+    user: User
+    full_name: str | None

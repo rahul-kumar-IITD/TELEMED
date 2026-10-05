@@ -344,8 +344,8 @@
       "Call with 'Bearer garbage' and assert 401",
       "Call with a token whose exp is in the past and assert 401"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:28:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -363,8 +363,8 @@
       "Call an /api/admin route",
       "Assert 403"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:28:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -381,8 +381,8 @@
       "Call a doctor-only route as a patient and assert 403",
       "Call GET /api/appointments/{id} as patient B for patient A's appointment and assert 404"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:28:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -400,8 +400,8 @@
       "Deactivate the user directly in the database",
       "Call a protected route with the token and assert 401"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:28:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -419,8 +419,8 @@
       "Call a patient-scoped GET, a doctor-scoped GET and an admin GET",
       "Assert each returns 200"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:28:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [

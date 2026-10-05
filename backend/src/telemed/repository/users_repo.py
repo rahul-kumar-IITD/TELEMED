@@ -7,10 +7,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from telemed.repository.mappers import user_to_domain
+from telemed.repository.models import DoctorProfile as DoctorProfileRow
+from telemed.repository.models import PatientProfileVersion
 from telemed.repository.models import User as UserRow
 from telemed.types import domain
 from telemed.types.enums import Role
 from telemed.types.errors import EmailAlreadyRegisteredException
+from telemed.types.ids import UserId
 
 
 @dataclass(frozen=True)
@@ -26,6 +29,27 @@ def find_credentials_by_email(session: Session, email: str) -> UserCredentials |
     if row is None:
         return None
     return UserCredentials(user=user_to_domain(row), password_hash=row.password_hash)
+
+
+def find_by_id(session: Session, user_id: UserId) -> domain.User | None:
+    row = session.get(UserRow, user_id)
+    return user_to_domain(row) if row is not None else None
+
+
+def find_full_name(session: Session, user: domain.User) -> str | None:
+    """Display name from the latest patient profile version or the doctor profile; admins: None."""
+    if user.role is Role.PATIENT:
+        return session.scalars(
+            select(PatientProfileVersion.full_name)
+            .where(PatientProfileVersion.patient_id == user.user_id)
+            .order_by(PatientProfileVersion.version_number.desc())
+            .limit(1)
+        ).first()
+    if user.role is Role.DOCTOR:
+        return session.scalars(
+            select(DoctorProfileRow.full_name).where(DoctorProfileRow.doctor_id == user.user_id)
+        ).first()
+    return None
 
 
 def insert_user(

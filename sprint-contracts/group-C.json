@@ -1,0 +1,272 @@
+{
+  "group": "C",
+  "stories": [
+    "E1-S4"
+  ],
+  "features": [
+    "F017",
+    "F018",
+    "F019",
+    "F020",
+    "F021"
+  ],
+  "mode": "lean",
+  "verification_mode": "local",
+  "start_command": "cd backend && export DATABASE_PATH=./eval-c.db JWT_SECRET=eval-secret-at-least-32-bytes-long-0123456789 PROVIDER_TIMEZONE=UTC && rm -f eval-c.db && uv run alembic upgrade head && uv run uvicorn telemed.api.app:create_app --factory --host 127.0.0.1 --port 8000 > ../eval-c-server.log 2>&1",
+  "start_note": "Backend only; npm start does not exist until E5-S1. DATABASE_PATH is relative to backend/, so sqlite3 inspection targets backend/eval-c.db. JWT_SECRET is exported explicitly (min 32 bytes); after C-UR-1 it is mandatory outside APP_ENV=dev, so the start command must keep exporting it. Live protected routes available in group C: GET /api/auth/me (added by E1-S4) and whatever exists from earlier groups. Doctor-only, admin and appointment-ownership routes (E2-S2, E2-S3, E3-S2) do not exist yet, so role/ownership rules (AC2, AC3, AC5) are verified at pytest level through test-only routes mounted on a test app that use the real get_current_user/require_roles/access.py, plus live checks on /api/auth/me. The admin user for live checks is inserted via sqlite3 (argon2 hash generated with uv run python) because no admin bootstrap endpoint exists.",
+  "backend_url": "http://localhost:8000",
+  "api_checks": [
+    {
+      "id": "C-API-1a",
+      "story": "E1-S4",
+      "ac": 1,
+      "feature": "F017",
+      "note": "no Authorization header on a protected route",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "expect_status": 401,
+      "expect_body_fields": {
+        "code": "UNAUTHENTICATED"
+      }
+    },
+    {
+      "id": "C-API-1b",
+      "story": "E1-S4",
+      "ac": 1,
+      "feature": "F017",
+      "note": "malformed token: 'Bearer garbage', 'Bearer a.b.c', non-Bearer scheme 'Basic xxx', empty bearer value; each 401 UNAUTHENTICATED",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "expect_status": 401,
+      "expect_body_fields": {
+        "code": "UNAUTHENTICATED"
+      }
+    },
+    {
+      "id": "C-API-1c",
+      "story": "E1-S4",
+      "ac": 1,
+      "feature": "F017",
+      "note": "token signed with the correct secret but exp in the past (forge with PyJWT using the eval JWT_SECRET), and a token signed with a different secret; each 401 UNAUTHENTICATED. Also alg=none token rejected 401.",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "expect_status": 401,
+      "expect_body_fields": {
+        "code": "UNAUTHENTICATED"
+      }
+    },
+    {
+      "id": "C-API-1d",
+      "story": "E1-S4",
+      "ac": 1,
+      "feature": "F017",
+      "note": "valid token (register + login p1) returns 200 on /api/auth/me with the API-05 User shape (user_id, email, role PATIENT, active true, full_name, created_at); no password_hash in body (control for 1a-1c)",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "role": "PATIENT",
+        "user_id": "integer matching the registered user",
+        "email": "p1 email (lower-cased)",
+        "active": true,
+        "full_name": "string",
+        "created_at": "ISO 8601 UTC with trailing Z"
+      },
+      "expect_body_absent": [
+        "password",
+        "password_hash"
+      ]
+    },
+    {
+      "id": "C-API-1e",
+      "story": "E1-S4",
+      "ac": 1,
+      "feature": "F017",
+      "note": "pytest: anonymous, malformed and expired tokens on role-restricted test routes (admin-only, doctor-only, patient-only) return 401 UNAUTHENTICATED, never 403 or 404 (access order 401 -> 403 -> 404 per api-contracts 0.2.1); 401 body contains no exception text and is identical across the cases",
+      "command": "cd backend && uv run pytest tests/integration/test_role_separation.py -q -k \"unauthenticated or no_token or expired or malformed\"",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "C-API-2a",
+      "story": "E1-S4",
+      "ac": 2,
+      "feature": "F018",
+      "note": "pytest: patient exists in DB with role PATIENT; forge a validly signed token (same secret) with claim role=ADMIN; call an admin-only test route guarded by require_roles(ADMIN); assert 403 FORBIDDEN",
+      "command": "cd backend && uv run pytest tests/integration/test_role_separation.py -q -k \"forged or claimed_role or role_from_db\"",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "C-API-2b",
+      "story": "E1-S4",
+      "ac": 2,
+      "feature": "F018",
+      "note": "live: GET /api/auth/me with the forged ADMIN-claim token for p1 returns role PATIENT (DB value), not ADMIN. Also: after sqlite3 UPDATE users SET role='DOCTOR' for p1, the same still-valid token's /api/auth/me returns role DOCTOR (role re-read each request).",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "role": "value stored in users.role, never the token claim"
+      }
+    },
+    {
+      "id": "C-API-3a",
+      "story": "E1-S4",
+      "ac": 3,
+      "feature": "F019",
+      "note": "pytest: patient token on doctor-only and admin-only test routes returns 403; doctor token on patient-only and admin-only routes returns 403; 403 body code FORBIDDEN",
+      "command": "cd backend && uv run pytest tests/integration/test_role_separation.py -q -k \"wrong_role or forbidden\"",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "C-API-3b",
+      "story": "E1-S4",
+      "ac": 3,
+      "feature": "F019",
+      "note": "pytest: patient B requests patient A's object through a test route using service/access.py ownership check: 404 NOT_FOUND, and the body is byte-identical to the 404 for a non-existent id (no existence leak). Ownership 404 happens after the role check (wrong role gets 403, not 404). Real GET /api/appointments/{id} replaces this test route in E3 groups.",
+      "command": "cd backend && uv run pytest tests/integration/test_role_separation.py -q -k \"ownership or not_found\"",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "C-API-3c",
+      "story": "E1-S4",
+      "ac": 3,
+      "feature": "F019",
+      "note": "live: /api/auth/me is role-agnostic and needs no ownership; live role 403 check is run against any real route that exists at evaluation time with a role restriction (e.g. patient profile routes if E1-S5 already merged; otherwise N/A and covered by C-API-3a). Evaluator records which real routes were available. Per api-contracts matrix, admin on role-specific /me routes (e.g. /api/patients/me/profile) is 403.",
+      "expect": "403 for wrong role on any existing role-restricted real route, or documented N/A"
+    },
+    {
+      "id": "C-API-4a",
+      "story": "E1-S4",
+      "ac": 4,
+      "feature": "F020",
+      "note": "live: login p1, call GET /api/auth/me with token (200), sqlite3 UPDATE users SET is_active=0 WHERE email='p1@example.test', call again with the same still-valid token",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "expect_status": 401,
+      "expect_body_fields": {
+        "code": "UNAUTHENTICATED"
+      }
+    },
+    {
+      "id": "C-API-4b",
+      "story": "E1-S4",
+      "ac": 4,
+      "feature": "F020",
+      "note": "reactivate (is_active=1) and the same token works again (200), proving the check is per-request against the DB with no token blacklist or cache",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "expect_status": 200
+    },
+    {
+      "id": "C-API-4c",
+      "story": "E1-S4",
+      "ac": 4,
+      "feature": "F020",
+      "note": "pytest: token for a user_id that no longer exists in users returns 401 (not 500)",
+      "command": "cd backend && uv run pytest tests/integration/test_role_separation.py -q -k \"deactivated or deleted or unknown_user\"",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "C-API-5a",
+      "story": "E1-S4",
+      "ac": 5,
+      "feature": "F021",
+      "note": "pytest: ADMIN token gets 200 on an id-addressed patient-scoped test route (another patient's existing object), a doctor-scoped id-addressed test route, and an admin test route; admin on a non-existent object is 404 (not 200). Per api-contracts 0.2 the admin bypass covers id-addressed reads; role-specific /me routes and mutating appointment actions are 403 for admin and are out of scope here.",
+      "command": "cd backend && uv run pytest tests/integration/test_role_separation.py -q -k \"admin\"",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "C-API-5b",
+      "story": "E1-S4",
+      "ac": 5,
+      "feature": "F021",
+      "note": "live: admin user inserted via sqlite3, login, GET /api/auth/me returns 200 with role ADMIN. Per api-contracts access matrix, admin-403 exceptions (book, mine, status change, notes, cancel, reschedule) are per-route policy owned by later stories and are not asserted here.",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "role": "ADMIN"
+      }
+    },
+    {
+      "id": "C-API-6",
+      "story": "E1-S4",
+      "ac": 1,
+      "feature": "F017",
+      "note": "full role separation test module plus regression of group B auth tests",
+      "command": "cd backend && uv run pytest tests/integration/test_role_separation.py tests/integration/test_auth_register_login.py -q",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "C-UR-1-a",
+      "story": "user_requested",
+      "ac": null,
+      "feature": null,
+      "tag": "NFR-04",
+      "note": "USER-REQUESTED (see user_requested_additions C-UR-1). Test tagged NFR-04: with APP_ENV=prod (and staging) and JWT_SECRET unset, app/Settings startup is refused; with JWT_SECRET equal to the old dev value outside dev, startup refused; with JWT_SECRET shorter than 32 bytes refused even in dev.",
+      "command": "cd backend && uv run pytest tests/unit/test_settings.py -q -k \"NFR_04 or nfr04 or jwt_secret\"",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "C-UR-1-b",
+      "story": "user_requested",
+      "ac": null,
+      "feature": null,
+      "tag": "NFR-04",
+      "note": "live: uvicorn start with JWT_SECRET unset and APP_ENV=prod exits non-zero with a clear error that names JWT_SECRET and does not print any secret value; same with JWT_SECRET=dev-only-insecure-jwt-secret-change-me-0123456789 and APP_ENV=prod. With APP_ENV=dev and no JWT_SECRET the app starts, and two separate process starts use different secrets (a token minted by process 1 is rejected 401 by process 2).",
+      "expect": "refused outside dev for missing/old-dev secret; dev starts with random per-process secret"
+    }
+  ],
+  "user_requested_additions": [
+    {
+      "id": "C-UR-1",
+      "source": "user (security review)",
+      "tag": "NFR-04",
+      "beyond_story_criteria": true,
+      "title": "Remove the committed default JWT secret",
+      "requirements": [
+        "Remove the fixed committed DEV_JWT_SECRET default from backend/src/telemed/config/settings.py (currently line 8 constant and line 20 default; consumed via service/bootstrap.py line 35 and service/container.py line 47). jwt_secret must come from the environment.",
+        "Startup is refused (clear error naming JWT_SECRET, never echoing the value) when JWT_SECRET is missing, or equal to the old dev value 'dev-only-insecure-jwt-secret-change-me-0123456789', unless APP_ENV=dev.",
+        "In dev (APP_ENV=dev) and in tests, when JWT_SECRET is missing generate a random per-process secret (e.g. secrets.token_urlsafe(48)) instead of any fixed string; it must not be logged or appear in repr(settings).",
+        "Keep the 32-byte minimum for any supplied secret (existing test_short_jwt_secret_rejected must still pass).",
+        "Add an APP_ENV setting (dev/staging/prod, default dev per specs/design/deployment.md) if Settings does not already have one. Note: a default of dev means an unset APP_ENV permits the random per-process secret, which is acceptable because it is never a fixed string.",
+        "A test tagged NFR-04 asserts the app refuses to start with the dev default outside dev (and with a missing secret outside dev).",
+        ".env.example (project root) must not carry the fixed secret as a working default: remove the value (blank or a placeholder that fails validation, with a comment to generate one, e.g. python -c \"import secrets; print(secrets.token_urlsafe(48))\").",
+        "Existing tests that relied on the fixed default (tests/unit/test_settings.py::test_jwt_secret_default_is_long_enough_and_hidden and any conftest) are updated to set JWT_SECRET explicitly or assert the random per-process behaviour."
+      ],
+      "verified_by": [
+        "C-UR-1-a",
+        "C-UR-1-b"
+      ]
+    }
+  ],
+  "playwright_checks": [],
+  "design_checks": [],
+  "architecture_checks": {
+    "files_must_exist": [
+      "backend/src/telemed/service/access.py",
+      "backend/src/telemed/api/deps.py",
+      "backend/tests/integration/test_role_separation.py"
+    ],
+    "files_must_not_exist": [],
+    "content_rules": [
+      "E1-S4 AC2: api/deps.py get_current_user loads the user row from the database on every request and takes the role from users.role; the role claim in the JWT is never used for authorization decisions",
+      "E1-S4 AC4: get_current_user rejects users with is_active false with 401 UNAUTHENTICATED; no in-process cache of user/role between requests",
+      "E1-S4 AC1: invalid, malformed, expired, wrong-signature and alg=none tokens all map to 401 UNAUTHENTICATED with the generic error body (no exception text echoed)",
+      "E1-S4 AC3: require_roles raises 403 FORBIDDEN; ownership checks live in service/access.py and raise NotFound (404) for both missing and foreign objects with identical bodies; ADMIN bypass is explicit in access.py",
+      "E1-S4: /api/auth/me added to api/routers/auth.py and protected by get_current_user; users_repo.py gains the by-id lookup; layering respected (api/deps.py does not touch sqlite directly, goes via the service/repository layer)",
+      "C-UR-1: grep of backend/src and .env.example finds no occurrence of the literal 'dev-only-insecure-jwt-secret-change-me-0123456789' as a default value (it may appear only as a constant in the refusal denylist, if kept)",
+      "C-UR-1: settings.py jwt_secret has no fixed-string default; dev fallback uses the secrets module"
+    ]
+  },
+  "review_notes": [
+    "Lean mode: only checks mapped to E1-S4 acceptance criteria F017-F021 plus the user-requested addition; generic lint/coverage/size gates omitted as in groups A and B.",
+    "No design or playwright checks: E1-S4 is an API-layer story with no UI (design_checks and playwright_checks are empty on purpose).",
+    "Role and ownership rules AC2/AC3/AC5 cannot be fully exercised live because admin, doctor-only and appointment routes do not exist until later groups; they are verified with pytest test-only routes that mount the real get_current_user, require_roles and access.py, plus live /api/auth/me checks. Real routes should be added to the live checks if present at evaluation time (C-API-3c).",
+    "C-UR-1 is beyond the E1-S4 acceptance criteria and was requested by the user following a security review; it is tagged NFR-04 (the same brief criterion E1-S4 covers) and has no features.json entry (feature null). Evaluator should treat C-UR-1-a/b as required for group C, and should consider adding a features.json entry if the harness requires one.",
+    "Group C start_command exports JWT_SECRET explicitly because C-UR-1 makes it mandatory outside dev.",
+    "Note on spec mismatch: specs/design/deployment.md names a different dev default ('change-me-in-development') than the code and .env.example; C-UR-1 supersedes both: no fixed default at all. deployment.md should be updated by the generator to match.",
+    "Test file names follow specs/design/component-map.md (E1-S4 row); test_settings.py is an existing file modified for C-UR-1.",
+    "Reviewed against E1-S4 ACs and api-contracts: added C-API-1e (401 precedes 403/404 on role routes), tightened C-API-1d to the full API-05 User shape, scoped C-API-5a admin bypass to id-addressed reads per api-contracts 0.2, removed the unrequested ADMIN-deactivation extra from C-API-4b. C-UR-1 retained unchanged."
+  ]
+}

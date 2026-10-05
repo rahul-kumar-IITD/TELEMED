@@ -25,7 +25,7 @@ Settings (all in `.env.example`, validated at startup; unknown `PROVIDER_TIMEZON
 |---|---|---|---|
 | `DATABASE_PATH` | `./telemed.db` | no | SQLite file |
 | `BUSY_TIMEOUT_MS` | `10000` (min 5000) | no | lock wait |
-| `JWT_SECRET` | none in staging/prod (dev default `change-me-in-development`, refused when `APP_ENV != dev`) | **yes** | HS256 key, >= 32 bytes |
+| `JWT_SECRET` | none (no fixed default; unset in `APP_ENV=dev` generates a random per-process secret, unset or the old published dev value is refused when `APP_ENV != dev`) | **yes** | HS256 key, >= 32 bytes |
 | `JWT_LIFETIME_MINUTES` | `30` | no | access token lifetime |
 | `PROVIDER_TIMEZONE` | `UTC` | no | template wall-clock zone, queue day |
 | `SLOT_WINDOW_DAYS` | `14` | no | booking window |

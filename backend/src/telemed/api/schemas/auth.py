@@ -10,7 +10,7 @@ from pydantic import (
     field_validator,
 )
 
-from telemed.types.domain import LoginResult, ProfileData, User
+from telemed.types.domain import LoginResult, ProfileData, User, UserView
 from telemed.types.enums import Gender, Role
 
 _EMAIL_PATTERN = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
@@ -74,4 +74,25 @@ class LoginResponse(BaseModel):
             expires_at=result.token.expires_at,
             user_id=result.user_id,
             role=result.role,
+        )
+
+
+class UserResponse(BaseModel):
+    user_id: int
+    email: str
+    role: Role
+    active: bool
+    full_name: str | None
+    created_at: datetime
+
+    @field_serializer("created_at")
+    def _utc_z(self, value: datetime) -> str:
+        return value.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    @classmethod
+    def from_domain(cls, view: UserView) -> "UserResponse":
+        user = view.user
+        return cls(
+            user_id=user.user_id, email=user.email, role=user.role, active=user.active,
+            full_name=view.full_name, created_at=user.created_at,
         )

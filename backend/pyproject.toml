@@ -36,7 +36,7 @@ packages = ["src/telemed"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "--basetemp=.pytest_tmp"
-markers = ["ac(id): acceptance criterion tag"]
+markers = ["ac(id): acceptance criterion tag", "nfr(id): non-functional requirement tag"]
 
 [tool.coverage.run]
 source = ["src/telemed"]

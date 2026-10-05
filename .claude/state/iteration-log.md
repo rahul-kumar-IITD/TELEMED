@@ -36,3 +36,6 @@
 
 ## Group B - PASS (lean) 2026-10-06
 E1-S3, E2-S1, E3-S1 implemented; gates 1-5 green; coverage 100%; new deps argon2-cffi, PyJWT.
+
+## Group C - PASS (lean) 2026-10-06
+E1-S4 (get_current_user, require_roles, access.py, GET /api/auth/me) implemented; gates 1-5 green; coverage 100%. Plus user-requested C-UR-1 (NFR-04): JWT secret hardening, no committed default.
