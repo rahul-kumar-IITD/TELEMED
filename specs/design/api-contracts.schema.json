@@ -1,0 +1,2928 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "TeleMed API",
+    "version": "1.0.0",
+    "description": "Telemedicine appointment booking API. All fields snake_case. Datetimes tz-aware ISO 8601 (UTC in responses). Money is a 2-decimal string. Rate limiting is out of scope (x-rate-limit: none). Narrative source: api-contracts.md. Admin access rule: ADMIN may GET any id-addressed resource (profiles, appointments, notes, doctors), edit patient profiles (AC-01), list/deactivate/reactivate users and onboard doctors. ADMIN may NOT book, cancel, reschedule, change status or add notes on behalf of others, and gets 403 on role-specific /me routes. Patient-profile edits are allowed only for the owning patient or an admin; a doctor or another patient is refused."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "dev"
+    }
+  ],
+  "tags": [
+    {
+      "name": "System"
+    },
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "Patients"
+    },
+    {
+      "name": "Doctors"
+    },
+    {
+      "name": "Admin"
+    },
+    {
+      "name": "Appointments"
+    },
+    {
+      "name": "Notes"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Liveness",
+        "tags": [
+          "System"
+        ],
+        "description": "Story E1-S2. Auth: Public. Rate limit: none.",
+        "x-story": "E1-S2",
+        "x-rate-limit": "none",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Service up",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/config": {
+      "get": {
+        "operationId": "getConfig",
+        "summary": "Public runtime config for the UI",
+        "tags": [
+          "System"
+        ],
+        "description": "Story E5-S1. Auth: Public. Rate limit: none.",
+        "x-story": "E5-S1",
+        "x-rate-limit": "none",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Config",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "operationId": "register",
+        "summary": "Register a patient",
+        "tags": [
+          "Auth"
+        ],
+        "description": "Story E1-S3. Auth: Public. Rate limit: none.",
+        "x-story": "E1-S3",
+        "x-rate-limit": "none",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "operationId": "login",
+        "summary": "Log in",
+        "tags": [
+          "Auth"
+        ],
+        "description": "Story E1-S3. Auth: Public. Rate limit: none.",
+        "x-story": "E1-S3",
+        "x-rate-limit": "none",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token issued",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/InvalidCredentials"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "operationId": "getMe",
+        "summary": "Current user",
+        "tags": [
+          "Auth"
+        ],
+        "description": "Story E1-S4. Auth: Any authenticated. Rate limit: none.",
+        "x-story": "E1-S4",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/patients/me/profile": {
+      "get": {
+        "operationId": "getMyProfile",
+        "summary": "Latest profile version",
+        "tags": [
+          "Patients"
+        ],
+        "description": "Story E1-S5. Auth: PATIENT. Rate limit: none. ADMIN receives 403 (role-specific /me route; admin has no personal profile or queue).",
+        "x-story": "E1-S5",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatientProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateMyProfile",
+        "summary": "Append a new profile version",
+        "tags": [
+          "Patients"
+        ],
+        "description": "Story E1-S5. Auth: PATIENT. Rate limit: none. Admin edits patient profiles through PUT /api/admin/patients/{patient_id}/profile; ADMIN and DOCTOR receive 403 here.",
+        "x-story": "E1-S5",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatientProfileUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "New version",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatientProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/patients/{patient_id}/profile": {
+      "get": {
+        "operationId": "getPatientProfile",
+        "summary": "Profile by id (own id or ADMIN)",
+        "tags": [
+          "Patients"
+        ],
+        "description": "Story E1-S5. Auth: PATIENT(own)/ADMIN. Rate limit: none. DOCTOR receives 403; another patient's id returns 404.",
+        "x-story": "E1-S5",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatientProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/doctors": {
+      "get": {
+        "operationId": "searchDoctors",
+        "summary": "Search active doctors",
+        "tags": [
+          "Doctors"
+        ],
+        "description": "Story E2-S4. Auth: Any authenticated. Rate limit: none.",
+        "x-story": "E2-S4",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "specialty",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "available_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "available_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "earliest_slot",
+                "fee",
+                "name"
+              ],
+              "default": "earliest_slot"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Doctors",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/doctors/me/slots": {
+      "get": {
+        "operationId": "listMySlots",
+        "summary": "Caller's slots in range",
+        "tags": [
+          "Doctors"
+        ],
+        "description": "Story E2-S3. Auth: DOCTOR. Rate limit: none. ADMIN receives 403 (role-specific /me route; admin has no personal profile or queue).",
+        "x-story": "E2-S3",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "default now"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "default from+14d; max 31d range"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Slots",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlotList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/doctors/me/slots/{slot_id}/block": {
+      "put": {
+        "operationId": "blockSlot",
+        "summary": "Block an AVAILABLE slot",
+        "tags": [
+          "Doctors"
+        ],
+        "description": "Story E2-S3. Auth: DOCTOR. Rate limit: none. ADMIN receives 403 (role-specific /me route; admin has no personal profile or queue).",
+        "x-story": "E2-S3",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blocked",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Slot"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/doctors/me/slots/{slot_id}/unblock": {
+      "put": {
+        "operationId": "unblockSlot",
+        "summary": "Unblock a BLOCKED slot",
+        "tags": [
+          "Doctors"
+        ],
+        "description": "Story E2-S3. Auth: DOCTOR. Rate limit: none. ADMIN receives 403 (role-specific /me route; admin has no personal profile or queue).",
+        "x-story": "E2-S3",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unblocked",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Slot"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/doctors/me/queue": {
+      "get": {
+        "operationId": "getMyQueue",
+        "summary": "Daily queue in provider timezone",
+        "tags": [
+          "Doctors"
+        ],
+        "description": "Story E3-S5. Auth: DOCTOR. Rate limit: none. ADMIN receives 403 (role-specific /me route; admin has no personal profile or queue).",
+        "x-story": "E3-S5",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "default today in provider zone"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Queue",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueueResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/doctors/{doctor_id}": {
+      "get": {
+        "operationId": "getDoctor",
+        "summary": "Doctor detail",
+        "tags": [
+          "Doctors"
+        ],
+        "description": "Story E2-S4. Auth: Any authenticated. Rate limit: none.",
+        "x-story": "E2-S4",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "doctor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Doctor",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/doctors/{doctor_id}/slots": {
+      "get": {
+        "operationId": "listDoctorOpenSlots",
+        "summary": "Open slots for next 14 days",
+        "tags": [
+          "Doctors"
+        ],
+        "description": "Story E2-S4. Auth: Any authenticated. Rate limit: none.",
+        "x-story": "E2-S4",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "doctor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Open slots",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlotList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/admin/doctors": {
+      "post": {
+        "operationId": "onboardDoctor",
+        "summary": "Onboard a doctor",
+        "tags": [
+          "Admin"
+        ],
+        "description": "Story E2-S2. Auth: ADMIN. Rate limit: none.",
+        "x-story": "E2-S2",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DoctorOnboardRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorOnboardResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "operationId": "listUsers",
+        "summary": "List users",
+        "tags": [
+          "Admin"
+        ],
+        "description": "Story E4-S2. Auth: ADMIN. Rate limit: none.",
+        "x-story": "E4-S2",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "role",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/Role"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Users",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{user_id}/deactivate": {
+      "put": {
+        "operationId": "deactivateUser",
+        "summary": "Deactivate user",
+        "tags": [
+          "Admin"
+        ],
+        "description": "Story E4-S2. Auth: ADMIN. Rate limit: none.",
+        "x-story": "E4-S2",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deactivated",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{user_id}/reactivate": {
+      "put": {
+        "operationId": "reactivateUser",
+        "summary": "Reactivate user",
+        "tags": [
+          "Admin"
+        ],
+        "description": "Story E4-S2. Auth: ADMIN. Rate limit: none.",
+        "x-story": "E4-S2",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reactivated",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/admin/patients/{patient_id}/profile": {
+      "put": {
+        "operationId": "adminUpdatePatientProfile",
+        "summary": "Append profile version for a patient",
+        "tags": [
+          "Admin"
+        ],
+        "description": "Story E4-S2. Auth: ADMIN. Rate limit: none. Only ADMIN may edit a patient's profile on someone's behalf; PATIENT and DOCTOR receive 403.",
+        "x-story": "E4-S2",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatientProfileUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "New version",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatientProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/appointments": {
+      "post": {
+        "operationId": "bookAppointment",
+        "summary": "Book a slot atomically",
+        "tags": [
+          "Appointments"
+        ],
+        "description": "Story E3-S2. Auth: PATIENT. Rate limit: none. ADMIN receives 403 (admin may not act on behalf of others).",
+        "x-story": "E3-S2",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Booked",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Appointment"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/appointments/mine": {
+      "get": {
+        "operationId": "listMyAppointments",
+        "summary": "Caller's appointments",
+        "tags": [
+          "Appointments"
+        ],
+        "description": "Story E4-S3. Auth: PATIENT. Rate limit: none. ADMIN receives 403 (role-specific /me route; admin has no personal profile or queue).",
+        "x-story": "E4-S3",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/AppointmentStatus"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Appointments",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppointmentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/appointments/{appointment_id}": {
+      "get": {
+        "operationId": "getAppointment",
+        "summary": "Appointment detail",
+        "tags": [
+          "Appointments"
+        ],
+        "description": "Story E4-S3. Auth: PATIENT(own)/DOCTOR(own)/ADMIN. Rate limit: none. ADMIN may read any appointment (read-only).",
+        "x-story": "E4-S3",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "appointment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Appointment",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Appointment"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/appointments/{appointment_id}/cancel": {
+      "post": {
+        "operationId": "cancelAppointment",
+        "summary": "Cancel (patient 60-min rule; doctor any time)",
+        "tags": [
+          "Appointments"
+        ],
+        "description": "Story E3-S3. Auth: PATIENT(own)/DOCTOR(own). Rate limit: none. ADMIN receives 403 (admin may not act on behalf of others).",
+        "x-story": "E3-S3",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "appointment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancelled",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Appointment"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/appointments/{appointment_id}/reschedule": {
+      "post": {
+        "operationId": "rescheduleAppointment",
+        "summary": "Reschedule atomically",
+        "tags": [
+          "Appointments"
+        ],
+        "description": "Story E3-S4. Auth: PATIENT(own). Rate limit: none. ADMIN receives 403 (admin may not act on behalf of others).",
+        "x-story": "E3-S4",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "appointment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescheduleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rescheduled",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Appointment"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/appointments/{appointment_id}/status": {
+      "post": {
+        "operationId": "transitionAppointment",
+        "summary": "Drive lifecycle",
+        "tags": [
+          "Appointments"
+        ],
+        "description": "Story E3-S5. Auth: DOCTOR(own). Rate limit: none. ADMIN receives 403 (admin may not act on behalf of others).",
+        "x-story": "E3-S5",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "appointment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transitioned",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Appointment"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/appointments/{appointment_id}/notes": {
+      "post": {
+        "operationId": "addNote",
+        "summary": "Append a consultation note",
+        "tags": [
+          "Notes"
+        ],
+        "description": "Story E4-S1. Auth: DOCTOR(own). Rate limit: none. ADMIN receives 403 (admin may not act on behalf of others).",
+        "x-story": "E4-S1",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "appointment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultationNote"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "422": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listNotes",
+        "summary": "List notes",
+        "tags": [
+          "Notes"
+        ],
+        "description": "Story E4-S1. Auth: PATIENT(own)/DOCTOR(own)/ADMIN. Rate limit: none.",
+        "x-story": "E4-S1",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "appointment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notes",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/api/appointments/{appointment_id}/notes/{note_id}": {
+      "get": {
+        "operationId": "getNote",
+        "summary": "Get one note (PUT/PATCH/DELETE return 405)",
+        "tags": [
+          "Notes"
+        ],
+        "description": "Story E4-S1. Auth: PATIENT(own)/DOCTOR(own)/ADMIN. Rate limit: none.",
+        "x-story": "E4-S1",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "appointment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "note_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Note",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Echoed or generated correlation id",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultationNote"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      },
+      "put": {
+        "operationId": "putNoteNotAllowed",
+        "summary": "Always 405: notes are immutable",
+        "tags": [
+          "Notes"
+        ],
+        "description": "Story E4-S1. Auth: n/a. Rate limit: none.",
+        "x-story": "E4-S1",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "appointment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "note_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchNoteNotAllowed",
+        "summary": "Always 405: notes are immutable",
+        "tags": [
+          "Notes"
+        ],
+        "description": "Story E4-S1. Auth: n/a. Rate limit: none.",
+        "x-story": "E4-S1",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "appointment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "note_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteNoteNotAllowed",
+        "summary": "Always 405: notes are immutable",
+        "tags": [
+          "Notes"
+        ],
+        "description": "Story E4-S1. Auth: n/a. Rate limit: none.",
+        "x-story": "E4-S1",
+        "x-rate-limit": "none",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "appointment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "note_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "503": {
+            "$ref": "#/components/responses/ServiceUnavailable"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Role": {
+        "type": "string",
+        "enum": [
+          "PATIENT",
+          "DOCTOR",
+          "ADMIN"
+        ]
+      },
+      "AppointmentStatus": {
+        "type": "string",
+        "enum": [
+          "BOOKED",
+          "CHECKED_IN",
+          "IN_PROGRESS",
+          "COMPLETED",
+          "CANCELLED",
+          "NO_SHOW"
+        ]
+      },
+      "SlotStatus": {
+        "type": "string",
+        "enum": [
+          "AVAILABLE",
+          "BOOKED",
+          "BLOCKED"
+        ]
+      },
+      "AllowedAction": {
+        "type": "string",
+        "enum": [
+          "CHECKED_IN",
+          "IN_PROGRESS",
+          "COMPLETED",
+          "NO_SHOW",
+          "CANCEL",
+          "RESCHEDULE"
+        ]
+      },
+      "Money": {
+        "type": "string",
+        "pattern": "^\\d+\\.\\d{2}$",
+        "example": "500.00"
+      },
+      "ErrorCode": {
+        "type": "string",
+        "enum": [
+          "UNAUTHENTICATED",
+          "INVALID_CREDENTIALS",
+          "FORBIDDEN",
+          "NOT_FOUND",
+          "METHOD_NOT_ALLOWED",
+          "EMAIL_ALREADY_REGISTERED",
+          "SLOT_UNAVAILABLE",
+          "INVALID_APPOINTMENT_STATE",
+          "CHANGE_WINDOW_CLOSED",
+          "INVALID_SLOT_STATE",
+          "ACTIVE_APPOINTMENTS_EXIST",
+          "CANNOT_DEACTIVATE_SELF",
+          "VALIDATION_ERROR",
+          "SERVICE_UNAVAILABLE",
+          "INTERNAL_ERROR"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ErrorCode"
+          },
+          "message": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "field",
+                "message"
+              ],
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          }
+        }
+      },
+      "ConfigResponse": {
+        "type": "object",
+        "required": [
+          "provider_timezone",
+          "slot_window_days",
+          "change_window_minutes"
+        ],
+        "properties": {
+          "provider_timezone": {
+            "type": "string"
+          },
+          "slot_window_days": {
+            "type": "integer"
+          },
+          "change_window_minutes": {
+            "type": "integer"
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "password",
+          "full_name",
+          "age",
+          "gender",
+          "phone"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "format": "password"
+          },
+          "full_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "age": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 130,
+            "description": "Age in whole years; 0 < age <= 130."
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Contact phone number."
+          }
+        },
+        "description": "AC-01 registration. full_name, age, gender and phone are required; missing/invalid -> 422 with field-level errors[]. The initial profile is stored as patient_profile_versions version 1. Unknown fields (e.g. role) are ignored."
+      },
+      "RegisterResponse": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "role",
+          "email"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "PATIENT"
+            ]
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "minLength": 1
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "format": "password"
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "required": [
+          "access_token",
+          "token_type",
+          "expires_in",
+          "expires_at",
+          "user_id",
+          "role"
+        ],
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "token_type": {
+            "type": "string",
+            "enum": [
+              "bearer"
+            ]
+          },
+          "expires_in": {
+            "type": "integer"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "email",
+          "role",
+          "active",
+          "created_at"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "full_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "UserList": {
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/User"
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "PatientProfile": {
+        "type": "object",
+        "required": [
+          "patient_id",
+          "version_number",
+          "full_name",
+          "age",
+          "gender",
+          "phone",
+          "updated_at"
+        ],
+        "properties": {
+          "patient_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "version_number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "full_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "age": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 130,
+            "description": "Age in whole years; 0 < age <= 130."
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Contact phone number."
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PatientProfileUpdate": {
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "full_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "age": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 130,
+            "description": "Age in whole years; 0 < age <= 130."
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "Contact phone number."
+          }
+        },
+        "description": "Partial update: omitted fields carry forward from the current version. Required profile fields cannot be cleared (null is rejected with 422). At least one key must be present."
+      },
+      "AvailabilityTemplateInput": {
+        "type": "object",
+        "required": [
+          "weekday",
+          "start_time",
+          "end_time",
+          "slot_length_minutes"
+        ],
+        "properties": {
+          "weekday": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 6,
+            "description": "0=Monday"
+          },
+          "start_time": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "end_time": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "slot_length_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 30
+          }
+        }
+      },
+      "AvailabilityTemplate": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AvailabilityTemplateInput"
+          },
+          {
+            "type": "object",
+            "required": [
+              "template_id"
+            ],
+            "properties": {
+              "template_id": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        ]
+      },
+      "DoctorOnboardRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "initial_password",
+          "specialty",
+          "languages",
+          "fee",
+          "availability_templates"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          },
+          "initial_password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128,
+            "format": "password"
+          },
+          "full_name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "specialty": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "languages": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 10,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z-]{2,8}$"
+            }
+          },
+          "fee": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d{1,2})?$",
+            "example": "500.00"
+          },
+          "availability_templates": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 14,
+            "items": {
+              "$ref": "#/components/schemas/AvailabilityTemplateInput"
+            }
+          }
+        }
+      },
+      "DoctorOnboardResponse": {
+        "type": "object",
+        "required": [
+          "doctor_id",
+          "user_id",
+          "email",
+          "specialty",
+          "languages",
+          "fee",
+          "availability_templates",
+          "slots_created"
+        ],
+        "properties": {
+          "doctor_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "user_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "full_name": {
+            "type": "string"
+          },
+          "specialty": {
+            "type": "string"
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "fee": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "availability_templates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvailabilityTemplate"
+            }
+          },
+          "slots_created": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "DoctorSummary": {
+        "type": "object",
+        "required": [
+          "doctor_id",
+          "full_name",
+          "specialty",
+          "languages",
+          "fee",
+          "earliest_slot"
+        ],
+        "properties": {
+          "doctor_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "full_name": {
+            "type": "string"
+          },
+          "specialty": {
+            "type": "string"
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "fee": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "earliest_slot": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "DoctorList": {
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DoctorSummary"
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "Slot": {
+        "type": "object",
+        "required": [
+          "slot_id",
+          "doctor_id",
+          "start_time",
+          "end_time",
+          "status"
+        ],
+        "properties": {
+          "slot_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "doctor_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "start_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SlotStatus"
+          }
+        }
+      },
+      "SlotList": {
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Slot"
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "Appointment": {
+        "type": "object",
+        "required": [
+          "appointment_id",
+          "status",
+          "slot_id",
+          "start_time",
+          "end_time",
+          "doctor",
+          "patient",
+          "fee",
+          "allowed_actions",
+          "join_url",
+          "change_deadline",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "appointment_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "$ref": "#/components/schemas/AppointmentStatus"
+          },
+          "slot_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "start_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "doctor": {
+            "type": "object",
+            "required": [
+              "doctor_id",
+              "full_name",
+              "specialty"
+            ],
+            "properties": {
+              "doctor_id": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "full_name": {
+                "type": "string"
+              },
+              "specialty": {
+                "type": "string"
+              }
+            }
+          },
+          "patient": {
+            "type": "object",
+            "required": [
+              "patient_id"
+            ],
+            "properties": {
+              "patient_id": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "full_name": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "fee": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "allowed_actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AllowedAction"
+            }
+          },
+          "join_url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true
+          },
+          "change_deadline": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AppointmentList": {
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Appointment"
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "QueueResponse": {
+        "type": "object",
+        "required": [
+          "date",
+          "timezone",
+          "items",
+          "total"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Appointment"
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "BookRequest": {
+        "type": "object",
+        "required": [
+          "slot_id"
+        ],
+        "properties": {
+          "slot_id": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "RescheduleRequest": {
+        "type": "object",
+        "required": [
+          "new_slot_id"
+        ],
+        "properties": {
+          "new_slot_id": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "StatusRequest": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/AppointmentStatus"
+          }
+        }
+      },
+      "NoteCreateRequest": {
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          }
+        }
+      },
+      "ConsultationNote": {
+        "type": "object",
+        "required": [
+          "note_id",
+          "appointment_id",
+          "author_id",
+          "text",
+          "created_at"
+        ],
+        "properties": {
+          "note_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "appointment_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "author_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "NoteList": {
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConsultationNote"
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "Gender": {
+        "type": "string",
+        "enum": [
+          "FEMALE",
+          "MALE",
+          "OTHER",
+          "UNDISCLOSED"
+        ],
+        "description": "Patient gender. UNDISCLOSED = prefers not to say."
+      }
+    },
+    "responses": {
+      "Unauthenticated": {
+        "description": "401 UNAUTHENTICATED",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "InvalidCredentials": {
+        "description": "401 INVALID_CREDENTIALS (identical body for every login failure)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "403 FORBIDDEN: authenticated but the role is not allowed on the route (includes ADMIN on patient/doctor-only actions and /me routes; doctor on patient-profile edit)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "404 NOT_FOUND: missing or another user's object",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "MethodNotAllowed": {
+        "description": "405 METHOD_NOT_ALLOWED",
+        "headers": {
+          "Allow": {
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "409: SLOT_UNAVAILABLE, INVALID_APPOINTMENT_STATE, CHANGE_WINDOW_CLOSED, INVALID_SLOT_STATE, ACTIVE_APPOINTMENTS_EXIST, CANNOT_DEACTIVATE_SELF or EMAIL_ALREADY_REGISTERED (see code)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "422 VALIDATION_ERROR with errors[]",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "ServiceUnavailable": {
+        "description": "503 SERVICE_UNAVAILABLE (SQLite lock timeout), generic body",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  }
+}

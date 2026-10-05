@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>E5-S5 Admin: doctor onboarding and user management - Mockup</title>
+<!-- Mockup for E5-S5 (1280px-first). Aligned to api-contracts.md API-16/17/18/19/20. Onboard body: email, initial_password, full_name, specialty, languages[], fee (string), availability_templates[{weekday 0=Mon, start_time, end_time, slot_length_minutes}]. User: user_id, email, role, active, full_name. PatientProfile (AC-01): full_name, age (integer 1..130), gender (FEMALE|MALE|OTHER|UNDISCLOSED), phone; 422 field-level errors[] shown inline. Admin edits patient profiles (API-20) and may GET any id-addressed resource, but cannot book/cancel/change status/reschedule/add notes on behalf of others (403). 422 errors[].field e.g. availability_templates[0].end_time. No schema gaps. -->
+<style>
+:root{--paper:#f6f1e7;--card:#fffdf8;--ink:#14302f;--ink2:#41605d;--line:#d9cfba;--teal:#0f5c58;--teal2:#0b4643;--clay:#b4472b;--gold:#e7b53c;--ok:#1f6b3a;--okbg:#dcefe0;--warn:#7a5200;--warnbg:#fbeac2;--err:#8f2a14;--errbg:#f9ddd4;--info:#1d4e7a;--infobg:#dbe8f5}
+*{box-sizing:border-box}html,body{margin:0;overflow-x:hidden}
+body{background:var(--paper);color:var(--ink);font:16px/1.5 "Segoe UI",Candara,"Gill Sans",sans-serif}
+h1,h2,h3,.display{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-weight:700;letter-spacing:-.01em;margin:0 0 .4em}
+h1{font-size:1.9rem}h2{font-size:1.4rem}h3{font-size:1.1rem}
+.mockbar{background:#1b1b1b;color:#eee;padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font:12px/1.2 ui-monospace,Consolas,monospace;position:sticky;top:0;z-index:50}
+.mockbar b{color:var(--gold);margin-right:4px}
+.mockbar button{background:#333;color:#eee;border:1px solid #555;border-radius:4px;padding:6px 10px;min-height:32px;font:inherit;cursor:pointer}
+.mockbar button[aria-pressed=true]{background:var(--gold);color:#111;border-color:var(--gold)}
+.api{display:inline-block;font:11px/1.3 ui-monospace,Consolas,monospace;background:#efe6cf;color:#5a4300;border:1px dashed #b9a15c;border-radius:3px;padding:1px 6px;margin-left:6px;vertical-align:middle;white-space:normal;overflow-wrap:anywhere;font-weight:400}
+.wrap{max-width:1180px;margin:0 auto;padding:16px}
+.topnav{background:var(--teal);color:#fff;display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;padding:8px 16px}
+.topnav .brand{font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-right:auto}
+.topnav a,.topnav button{color:#fff;background:none;border:0;text-decoration:none;min-height:44px;min-width:44px;padding:0 8px;display:inline-flex;align-items:center;font:inherit;cursor:pointer;border-bottom:3px solid transparent}
+.topnav a[aria-current=page]{border-bottom-color:var(--gold)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:12px;box-shadow:0 1px 0 #e8dfc9}
+.grid{display:grid;gap:12px}
+@media(min-width:900px){.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.sidebar{grid-template-columns:280px 1fr}}
+label{display:block;font-weight:600;font-size:.9rem;margin:10px 0 4px}
+input,select,textarea{width:100%;min-height:44px;padding:8px 10px;border:1.5px solid #8b9a96;border-radius:6px;background:#fff;color:var(--ink);font:inherit}
+input:focus,select:focus,textarea:focus,button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:1px}
+input[aria-invalid=true]{border-color:var(--clay);background:#fff6f3}
+.btn{min-height:44px;min-width:44px;padding:8px 16px;border-radius:6px;border:1.5px solid var(--teal);background:var(--teal);color:#fff;font-weight:600;font-size:1rem;font-family:inherit;cursor:pointer}
+.btn:hover:not(:disabled){background:var(--teal2)}
+.btn.sec{background:transparent;color:var(--teal)}
+.btn.danger{background:var(--clay);border-color:var(--clay)}
+.btn.danger.sec{background:transparent;color:var(--clay)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.block{width:100%}
+.hint{font-size:.85rem;color:var(--ink2)}
+.err{color:var(--err);font-size:.85rem;margin-top:3px}
+.msg{padding:10px 12px;border-radius:6px;margin:10px 0;font-size:.92rem;border-left:5px solid}
+.msg.err{background:var(--errbg);border-color:var(--clay);color:var(--err);font-size:.92rem}
+.msg.ok{background:var(--okbg);border-color:var(--ok);color:var(--ok)}
+.msg.warn{background:var(--warnbg);border-color:var(--gold);color:var(--warn)}
+.msg.info{background:var(--infobg);border-color:var(--info);color:var(--info)}
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.78rem;font-weight:700;letter-spacing:.04em;border:1px solid}
+.b-BOOKED{background:var(--infobg);color:var(--info);border-color:var(--info)}
+.b-CHECKED_IN{background:var(--warnbg);color:var(--warn);border-color:var(--warn)}
+.b-IN_PROGRESS{background:#e8dcf5;color:#4b2a7a;border-color:#4b2a7a}
+.b-COMPLETED{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
+.b-CANCELLED{background:#e7e2d6;color:#55503f;border-color:#55503f}
+.b-NO_SHOW{background:var(--errbg);color:var(--err);border-color:var(--err)}
+.b-AVAILABLE{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
+.b-BLOCKED{background:#e7e2d6;color:#55503f;border-color:#55503f}
+.b-ACTIVE{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
+.b-INACTIVE{background:var(--errbg);color:var(--err);border-color:var(--err)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.sp{justify-content:space-between}
+.state{display:none}.state.on{display:block}
+.skel{background:linear-gradient(90deg,#eadfc6,#f6efdd,#eadfc6);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:6px;height:18px;margin:8px 0}
+@keyframes sh{to{background-position:-200% 0}}
+.empty{text-align:center;padding:32px 12px;color:var(--ink2);border:2px dashed var(--line);border-radius:10px}
+.fee{font-family:Georgia,serif;font-weight:700;font-size:1.1rem}
+.sr{position:absolute;left:-9999px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2)}
+.chip{min-height:44px;min-width:44px;padding:6px 12px;border:1.5px solid var(--teal);border-radius:8px;background:#fff;color:var(--teal);font-weight:600;font-size:.95rem;font-family:inherit;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--teal);color:#fff}.chip:disabled{opacity:.45;cursor:not-allowed;background:#eee;border-color:#aaa;color:#555}
+.modal-bg{position:fixed;inset:0;background:rgba(20,48,47,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:100}
+.modal-bg.on{display:flex}.modal{background:var(--card);border-radius:10px;padding:20px;max-width:440px;width:100%}
+@media(max-width:700px){.resp thead{display:none}.resp tr{display:block;border:1px solid var(--line);border-radius:8px;margin-bottom:10px;padding:6px;background:var(--card)}.resp td{display:block;border:0;padding:4px 8px}.resp td::before{content:attr(data-l);font-weight:700;font-size:.75rem;text-transform:uppercase;color:var(--ink2);display:block}}
+
+.trow{display:grid;grid-template-columns:1fr 1fr;gap:8px;border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px;background:#fff}
+@media(min-width:900px){.trow{grid-template-columns:1.2fr 1fr 1fr 1fr auto;align-items:start}}
+.trow label{margin-top:0}
+</style></head>
+<body>
+<div class="mockbar" role="toolbar" aria-label="Mockup controls">
+<b>ONBOARD SERVER</b><button data-o="ok" aria-pressed="true">201</button><button data-o="422" aria-pressed="false">422 template</button>
+<b style="margin-left:12px">USER LIST</b><button data-l="data" aria-pressed="true">Data</button><button data-l="loading" aria-pressed="false">Loading</button><button data-l="empty" aria-pressed="false">Empty</button><button data-l="error" aria-pressed="false">Error</button>
+</div>
+<header class="topnav"><span class="brand">Telemed &middot; Admin</span><nav aria-label="Admin"><a href="#" id="tU" aria-current="page">Users</a><a href="#" id="tO">Onboard doctor</a></nav></header>
+<main class="wrap">
+<div id="live" role="alert" aria-live="polite" class="sr"></div>
+
+<section id="vU"><div class="row sp"><h1>Users <span class="api">GET /api/admin/users?role=</span></h1>
+<div><label for="rf">Role</label><select id="rf" style="width:auto"><option value="">All roles</option><option>PATIENT</option><option>DOCTOR</option><option>ADMIN</option></select></div></div>
+<p class="msg info" style="margin:8px 0">Admin scope: list, deactivate and reactivate users, edit patient profiles, onboard doctors, and read any appointment or note (read-only). Admins cannot book, cancel, reschedule, change status or add notes on behalf of others (server answers 403 FORBIDDEN), so this screen offers no such actions.</p>
+<div id="inline"></div><div id="users"></div></section>
+
+<section id="vO" hidden aria-labelledby="ho"><h1 id="ho">Onboard a doctor <span class="api">POST /api/admin/doctors</span></h1>
+<div id="oresult"></div>
+<form id="of" class="card" novalidate>
+<div class="grid g2">
+<div><label for="on">Full name</label><input id="on" value="Dr. Farah Siddiqui"></div>
+<div><label for="oe">Email</label><input id="oe" type="email" value="farah.siddiqui@example.test"></div>
+<div><label for="op">Initial password</label><input id="op" type="text" value="Welcome-2026!"></div>
+<div><label for="os">Specialty</label><input id="os" value="Neurology"></div>
+<div><label for="ol">Languages (codes, comma separated)</label><input id="ol" value="en, hi, ur"></div>
+<div><label for="oF">Fee (string, 2 decimals)</label><input id="oF" inputmode="decimal" value="900.00" aria-describedby="feeE"><div class="err" id="feeE" hidden>Fee must be a non-negative number with at most 2 decimals.</div></div>
+</div>
+<h2 style="margin-top:16px">Weekly availability template</h2>
+<div id="rows"></div>
+<p><button type="button" class="btn sec" id="addRow">+ Add template row</button></p>
+<p><button class="btn" type="submit">Onboard doctor <span class="api">POST /api/admin/doctors</span></button></p>
+</form></section>
+
+<div class="modal-bg" id="m"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt"><h2 id="mt">Edit patient profile</h2>
+<p class="hint">Saving appends a new profile version. <span class="api">PUT /api/admin/patients/{patient_id}/profile</span></p>
+<form id="pf" novalidate><label for="pn">Full name <span class="hint">full_name</span></label><input id="pn" name="full_name" autocomplete="name" maxlength="200" required aria-describedby="pne"><div id="pne" class="err" hidden></div>
+<div class="grid g2"><div><label for="pa">Age <span class="hint">age, 1 to 130</span></label><input id="pa" name="age" type="number" inputmode="numeric" min="1" max="130" step="1" required aria-describedby="pae"><div id="pae" class="err" hidden></div></div>
+<div><label for="pg">Gender <span class="hint">gender</span></label><select id="pg" name="gender" required aria-describedby="pge"><option value="">Select...</option><option value="FEMALE">Female</option><option value="MALE">Male</option><option value="OTHER">Other</option><option value="UNDISCLOSED">Prefer not to say</option></select><div id="pge" class="err" hidden></div></div></div>
+<label for="pph">Phone (contact) <span class="hint">phone</span></label><input id="pph" name="phone" type="tel" autocomplete="tel" maxlength="32" required aria-describedby="pphe"><div id="pphe" class="err" hidden></div>
+<div class="row" style="margin-top:12px"><button class="btn" type="submit">Save</button><button type="button" class="btn sec" id="pc">Close</button></div></form><div id="pmsg"></div></div></div>
+</main>
+<script>
+function $(s,r){return (r||document).querySelector(s)}function $$(s,r){return [...(r||document).querySelectorAll(s)]}
+function live(msg){var l=$('#live');l.textContent='';setTimeout(function(){l.textContent=msg},30)}
+function bindBar(group,cb){$$('.mockbar [data-'+group+']').forEach(function(b){b.addEventListener('click',function(){$$('.mockbar [data-'+group+']').forEach(function(x){x.setAttribute('aria-pressed','false')});b.setAttribute('aria-pressed','true');cb(b.dataset[group])})})}
+function show(prefix,id){$$('.state[id^="'+prefix+'"]').forEach(function(e){e.classList.toggle('on',e.id===prefix+id)})}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function fmtLocal(iso){var d=new Date(iso);var t=d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:false});var z=(d.toLocaleTimeString([], {timeZoneName:'short'}).split(' ').pop());return t+' '+z}
+function fmtDay(iso){return new Date(iso).toLocaleDateString([], {weekday:'short',day:'numeric',month:'short'})}
+
+var ME=1,om='ok',lm='data';
+var U=[{user_id:1,email:'admin@example.test',role:'ADMIN',active:true,full_name:'Site Admin'},{user_id:2,email:'meera.nair@example.test',role:'PATIENT',active:true,full_name:'Meera Nair'},{user_id:3,email:'arjun.rao@example.test',role:'PATIENT',active:false,full_name:'Arjun Rao'},
+{user_id:11,email:'anjali.menon@example.test',role:'DOCTOR',active:true,full_name:'Dr. Anjali Menon',busy:true},{user_id:12,email:'rohan.iyer@example.test',role:'DOCTOR',active:true,full_name:'Dr. Rohan Iyer'},{user_id:13,email:'sunita.verma@example.test',role:'DOCTOR',active:false,full_name:'Dr. Sunita Verma'}];
+function drawU(){var b=$('#users');
+ if(lm==='loading'){b.innerHTML='<div class="card"><div class="skel"></div><div class="skel"></div></div>';return}
+ if(lm==='error'){b.innerHTML='<div class="msg err" role="alert">Could not load users. Please try again. <button class="btn sec" onclick="setL(\'data\')">Retry</button></div>';return}
+ var l=lm==='empty'?[]:U.filter(function(u){return !$('#rf').value||u.role===$('#rf').value});
+ if(!l.length){b.innerHTML='<div class="empty">No users match this filter.</div>';return}
+ b.innerHTML='<table class="resp"><thead><tr><th>user_id</th><th>Name / email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+l.map(function(u){
+  var self=u.user_id===ME;
+  var tg=u.active?'<button class="btn danger sec" data-t="'+u.user_id+'"'+(self?' disabled aria-describedby="self"':'')+'>Deactivate <span class="api">PUT /api/admin/users/'+u.user_id+'/deactivate</span></button>':'<button class="btn sec" data-t="'+u.user_id+'">Reactivate <span class="api">PUT /api/admin/users/'+u.user_id+'/reactivate</span></button>';
+  return '<tr><td data-l="user_id">'+u.user_id+'</td><td data-l="Name / email">'+esc(u.full_name)+'<br><span class="hint">'+u.email+'</span>'+(self?' <em>(you)</em>':'')+'</td><td data-l="Role">'+u.role+'</td><td data-l="Status"><span class="badge b-'+(u.active?'ACTIVE':'INACTIVE')+'">'+(u.active?'ACTIVE':'INACTIVE')+'</span></td><td data-l="Actions"><div class="row">'+tg+(u.role==='PATIENT'?'<button class="btn sec" data-e="'+u.user_id+'">Edit profile</button>':'')+'</div>'+(self?'<div class="hint" id="self">You cannot deactivate your own account.</div>':'')+'</td></tr>'}).join('')+'</tbody></table>';
+ $$('#users [data-t]').forEach(function(x){x.onclick=function(){toggle(+x.dataset.t)}});$$('#users [data-e]').forEach(function(x){x.onclick=function(){edit(+x.dataset.e)}})}
+function setL(v){lm=v;$$('.mockbar [data-l]').forEach(function(x){x.setAttribute('aria-pressed',x.dataset.l===v)});drawU()}
+function toggle(id){var u=U.filter(function(x){return x.user_id===id})[0];
+ if(u.active&&u.busy){$('#inline').innerHTML='<div class="msg err" role="alert">Cannot deactivate '+u.email+': this doctor has active appointments (BOOKED, CHECKED_IN or IN_PROGRESS). Status unchanged. (409 ACTIVE_APPOINTMENTS_EXIST)</div>';live('Cannot deactivate: this doctor has active appointments.');return}
+ u.active=!u.active;$('#inline').innerHTML='<div class="msg ok">'+u.email+' is now '+(u.active?'active':'deactivated')+'.</div>';live('User updated.');drawU()}
+bindBar('l',setL);bindBar('o',function(v){om=v});$('#rf').onchange=drawU;
+var PF={full_name:['#pn','#pne'],age:['#pa','#pae'],gender:['#pg','#pge'],phone:['#pph','#pphe']};
+function validateP(){var e=[],n=$('#pn').value.trim(),a=$('#pa').value.trim(),g=$('#pg').value,p=$('#pph').value.trim(),ai=Number(a);
+ if(!n||n.length>200)e.push({field:'full_name',message:'Full name is required (1 to 200 characters).'});
+ if(a===''||!/^[0-9]+$/.test(a)||ai<1||ai>130)e.push({field:'age',message:'Age must be a whole number from 1 to 130.'});
+ if(['FEMALE','MALE','OTHER','UNDISCLOSED'].indexOf(g)<0)e.push({field:'gender',message:'Select a gender.'});
+ if(!p||p.length>32)e.push({field:'phone',message:'Phone number is required (up to 32 characters).'});
+ return e}
+function clearP(){Object.keys(PF).forEach(function(k){$(PF[k][0]).removeAttribute('aria-invalid');var m=$(PF[k][1]);m.hidden=true;m.textContent=''});$('#pmsg').innerHTML=''}
+function showP(errs){clearP();errs.forEach(function(x){var f=PF[x.field];$(f[0]).setAttribute('aria-invalid','true');var m=$(f[1]);m.hidden=false;m.textContent=x.message+' (422 VALIDATION_ERROR, errors[].field = '+x.field+')'});$(PF[errs[0].field][0]).focus();live(errs.length+' field(s) need attention: '+errs.map(function(x){return x.field}).join(', '))}
+function readP(){return {full_name:$('#pn').value.trim(),age:Number($('#pa').value),gender:$('#pg').value,phone:$('#pph').value.trim()}}
+var PD={2:{full_name:'Meera Nair',age:34,gender:'FEMALE',phone:'+91 98450 12345'},3:{full_name:'Arjun Rao',age:41,gender:'MALE',phone:'+91 99000 11122'}};
+function edit(id){var d=PD[id]||PD[2];$('#pn').value=d.full_name;$('#pa').value=d.age;$('#pg').value=d.gender;$('#pph').value=d.phone;clearP();$('#m').classList.add('on')}
+$('#pc').onclick=function(){$('#m').classList.remove('on')};
+$('#pf').onsubmit=function(e){e.preventDefault();var er=validateP();if(er.length){showP(er);return}clearP();$('#pmsg').innerHTML='<div class="msg ok">Profile saved as a new version (200).</div>';live('Profile saved.')};
+
+var rows=[{d:'0',s:'09:00',e:'12:00',l:'30'},{d:'2',s:'14:00',e:'17:00',l:'30'}];
+var DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']; /* weekday 0=Monday */
+function drawR(errs){errs=errs||{};$('#rows').innerHTML=rows.map(function(r,i){
+ return '<div class="trow" data-i="'+i+'"><div><label for="d'+i+'">Weekday <span class="hint">weekday</span></label><select id="d'+i+'">'+DAYS.map(function(n,k){return '<option value="'+k+'"'+(String(k)===r.d?' selected':'')+'>'+n+'</option>'}).join('')+'</select></div>'+
+ '<div><label for="s'+i+'">Start <span class="hint">start_time</span></label><input id="s'+i+'" type="time" value="'+r.s+'"></div>'+
+ '<div><label for="e'+i+'">End <span class="hint">end_time</span></label><input id="e'+i+'" type="time" value="'+r.e+'"'+(errs[i]?' aria-invalid="true" aria-describedby="er'+i+'"':'')+'>'+(errs[i]?'<div class="err" id="er'+i+'">'+errs[i]+'</div>':'')+'</div>'+
+ '<div><label for="l'+i+'">Slot minutes <span class="hint">slot_length_minutes</span></label><input id="l'+i+'" type="number" min="1" value="'+r.l+'"></div>'+
+ '<div><label class="sr" for="x'+i+'">Remove</label><button type="button" class="btn sec" id="x'+i+'" data-x="'+i+'" style="margin-top:22px" aria-label="Remove row '+(i+1)+'"'+(rows.length<2?' disabled':'')+'>&times;</button></div></div>'}).join('');
+ $$('#rows [data-x]').forEach(function(x){x.onclick=function(){sync();rows.splice(+x.dataset.x,1);drawR()}})}
+function sync(){rows=rows.map(function(r,i){return {d:$('#d'+i).value,s:$('#s'+i).value,e:$('#e'+i).value,l:$('#l'+i).value}})}
+$('#addRow').onclick=function(){sync();rows.push({d:'4',s:'10:00',e:'13:00',l:'30'});drawR()};
+$('#of').onsubmit=function(e){e.preventDefault();sync();$('#oresult').innerHTML='';$('#feeE').hidden=true;$('#oF').removeAttribute('aria-invalid');
+ if(!/^\d+(\.\d{1,2})?$/.test($('#oF').value)){$('#feeE').hidden=false;$('#oF').setAttribute('aria-invalid','true');live('Fee is invalid.');return}
+ if(om==='422'){var er={};er[rows.length-1]='availability_templates['+(rows.length-1)+'].slot_length_minutes: slot length must divide the window exactly. (422 VALIDATION_ERROR)';drawR(er);live('Template error: slot length does not divide the window.');return}
+ drawR();$('#oresult').innerHTML='<div class="msg ok"><strong>Doctor onboarded (201).</strong> doctor_id 14 &middot; '+esc($('#on').value)+' &middot; '+esc($('#os').value)+' &middot; fee '+$('#oF').value+'. slots_created: 12 for the next 14 days.</div>';live('Doctor onboarded.')};
+function tab(w){$('#vU').hidden=w!=='U';$('#vO').hidden=w!=='O';$('#tU').setAttribute('aria-current',w==='U'?'page':'false');$('#tO').setAttribute('aria-current',w==='O'?'page':'false')}
+$('#tU').onclick=function(e){e.preventDefault();tab('U')};$('#tO').onclick=function(e){e.preventDefault();tab('O')};
+drawU();drawR();
+</script></body></html>

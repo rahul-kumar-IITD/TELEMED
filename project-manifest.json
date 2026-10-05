@@ -1,0 +1,65 @@
+{
+  "name": "telemed",
+  "description": "TeleMed — telemedicine appointment booking platform (BC-AINE-010) with PATIENT, DOCTOR and ADMIN roles",
+  "stack": {
+    "backend": {
+      "language": "python",
+      "version": "3.12",
+      "framework": "fastapi",
+      "orm": "sqlalchemy-2.x",
+      "migrations": "alembic",
+      "validation": "pydantic-v2",
+      "package_manager": "uv",
+      "linter": "ruff",
+      "typechecker": "mypy --strict",
+      "test_runner": "pytest (pytest-bdd, pytest-cov, import-linter)"
+    },
+    "frontend": {
+      "language": "typescript",
+      "framework": "react-18",
+      "bundler": "vite",
+      "styling": "tailwindcss",
+      "routing": "react-router",
+      "package_manager": "npm",
+      "linter": "eslint",
+      "typechecker": "tsc",
+      "test_runner": "vitest (@testing-library/react)",
+      "e2e": "@playwright/test"
+    },
+    "database": {
+      "primary": "sqlite (file-based, WAL mode, busy_timeout set)",
+      "secondary": null
+    },
+    "deployment": {
+      "method": "local",
+      "start_command": "npm start",
+      "services": ["backend", "frontend"]
+    }
+  },
+  "evaluation": {
+    "api_base_url": "http://localhost:8000",
+    "ui_base_url": "http://localhost:5173",
+    "health_check": "http://localhost:8000/health",
+    "design_score_threshold": 7,
+    "design_max_iterations": 10,
+    "test_corpus_dir": "specs/test_artefacts"
+  },
+  "execution": {
+    "default_mode": "full",
+    "max_self_heal_attempts": 3,
+    "max_auto_iterations": 50,
+    "coverage_threshold": 80,
+    "session_chaining": true,
+    "agent_team_size": "auto",
+    "teammate_model": "sonnet"
+  },
+  "verification": {
+    "mode": "local",
+    "health_check": { "url": "http://localhost:8000/health", "retries": 5, "backoff_seconds": 2 },
+    "local": {
+      "backend_url": "http://localhost:8000",
+      "frontend_url": "http://localhost:5173",
+      "start_commands": ["npm start"]
+    }
+  }
+}

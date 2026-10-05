@@ -1,0 +1,2848 @@
+[
+  {
+    "id": "F001",
+    "category": "functional",
+    "story": "E1-S1",
+    "group": "A",
+    "description": "Running `alembic upgrade head` on an empty SQLite file creates tables users, patient_profiles, patient_profile_versions, doctor_profiles, availability_templates, slots, appointments, appointment_events and consultation_notes.",
+    "steps": [
+      "Run alembic upgrade head against a fresh database file",
+      "Query sqlite_master for table names",
+      "Assert all nine table names are present"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-01",
+      "NFR-02",
+      "NFR-05"
+    ]
+  },
+  {
+    "id": "F002",
+    "category": "security",
+    "story": "E1-S1",
+    "group": "A",
+    "description": "UPDATE and DELETE statements against patient_profile_versions, appointment_events and consultation_notes are each rejected by a SQLite trigger and leave the row unchanged.",
+    "steps": [
+      "Insert one row into each of the three tables",
+      "Execute UPDATE on each and assert an IntegrityError/abort is raised",
+      "Execute DELETE on each and assert the same",
+      "Re-read rows and assert they are unchanged"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-01",
+      "NFR-02",
+      "NFR-05"
+    ]
+  },
+  {
+    "id": "F003",
+    "category": "functional",
+    "story": "E1-S1",
+    "group": "A",
+    "description": "A fee of Decimal('500.00') is persisted as the integer 50000, read back as Decimal('500.00'), and no float type appears in fee or money code paths.",
+    "steps": [
+      "Save a doctor profile with fee Decimal('500.00') via the repository",
+      "Run raw SQL and assert the column value is the integer 50000",
+      "Read via the repository and assert Decimal('500.00')",
+      "Grep money modules and assert no float annotations or float() calls"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-01",
+      "NFR-02",
+      "NFR-05"
+    ]
+  },
+  {
+    "id": "F004",
+    "category": "performance",
+    "story": "E1-S1",
+    "group": "A",
+    "description": "Every new SQLite connection reports journal_mode 'wal' and a busy_timeout of at least 5000 ms.",
+    "steps": [
+      "Open a connection through the engine factory",
+      "Execute PRAGMA journal_mode and assert 'wal'",
+      "Execute PRAGMA busy_timeout and assert >= 5000"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-01",
+      "NFR-02",
+      "NFR-05"
+    ]
+  },
+  {
+    "id": "F005",
+    "category": "functional",
+    "story": "E1-S1",
+    "group": "A",
+    "description": "Inserting a slot with a status outside AVAILABLE/BOOKED/BLOCKED, or an appointment with a status outside BOOKED/CHECKED_IN/IN_PROGRESS/COMPLETED/CANCELLED/NO_SHOW, is rejected by a CHECK constraint.",
+    "steps": [
+      "Insert a slot with status 'FOO' and assert IntegrityError",
+      "Insert an appointment with status 'FOO' and assert IntegrityError",
+      "Insert valid values and assert success"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-01",
+      "NFR-02",
+      "NFR-05"
+    ]
+  },
+  {
+    "id": "F006",
+    "category": "performance",
+    "story": "E1-S2",
+    "group": "A",
+    "description": "GET /health returns 200 with body {\"status\":\"ok\"} within 1 second of the process starting.",
+    "steps": [
+      "Start the backend with `npm start` or uvicorn and record the start time",
+      "Poll GET /health until the first response",
+      "Assert status 200, body status 'ok' and elapsed time < 1s from listening"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-03",
+      "NFR-06",
+      "NFR-07"
+    ]
+  },
+  {
+    "id": "F007",
+    "category": "functional",
+    "story": "E1-S2",
+    "group": "A",
+    "description": "Every response carries an X-Request-ID header: a valid incoming value is echoed back, and a missing or invalid value is replaced by a generated UUID.",
+    "steps": [
+      "GET /health with X-Request-ID 'abc-123' and assert the same value in the response header",
+      "GET /health with no header and assert a UUID-format value",
+      "GET /health with an over-long or illegal-character value and assert a generated UUID"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-03",
+      "NFR-06",
+      "NFR-07"
+    ]
+  },
+  {
+    "id": "F008",
+    "category": "security",
+    "story": "E1-S2",
+    "group": "A",
+    "description": "Each log line is valid JSON containing correlation_id, and a request whose body contains an email, name or note text produces log lines that contain none of those values.",
+    "steps": [
+      "Capture logs while POSTing a body containing a unique email and name",
+      "Parse every log line as JSON and assert correlation_id exists",
+      "Assert the unique email and name strings appear in no log line"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-03",
+      "NFR-06",
+      "NFR-07"
+    ]
+  },
+  {
+    "id": "F009",
+    "category": "functional",
+    "story": "E1-S2",
+    "group": "A",
+    "description": "SlotUnavailableException and InvalidAppointmentStateException map to 409, naive datetimes and malformed input map to 422, and a SQLite lock timeout maps to 503 with a generic body.",
+    "steps": [
+      "Raise each exception from a test route and assert 409",
+      "Send a naive datetime and assert 422",
+      "Simulate OperationalError 'database is locked' and assert 503",
+      "Assert the 503 body contains no SQL or stack trace text"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-03",
+      "NFR-06",
+      "NFR-07"
+    ]
+  },
+  {
+    "id": "F010",
+    "category": "functional",
+    "story": "E1-S2",
+    "group": "A",
+    "description": "Settings load PROVIDER_TIMEZONE (default UTC), JWT lifetime, database path and busy timeout from environment, and an unknown timezone name aborts startup with an error naming PROVIDER_TIMEZONE.",
+    "steps": [
+      "Start with no env and assert provider timezone is UTC",
+      "Start with PROVIDER_TIMEZONE=Asia/Kolkata and assert it is applied",
+      "Start with PROVIDER_TIMEZONE=Mars/Base and assert a non-zero exit with the variable name in the message"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-03",
+      "NFR-06",
+      "NFR-07"
+    ]
+  },
+  {
+    "id": "F011",
+    "category": "functional",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "POST /api/auth/register with a valid email, an 8+ character password and a valid profile (full_name, age, gender, phone) returns 201 with a non-null user_id and role PATIENT.",
+    "steps": [
+      "POST /api/auth/register with email 'p1@example.test', password 'correct-horse', full_name 'Test Patient', age 34, gender 'FEMALE' and phone '+91-555-0100'",
+      "Assert status 201",
+      "Assert body contains non-null user_id and role 'PATIENT'",
+      "Assert the response body contains no password or hash"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01"
+    ]
+  },
+  {
+    "id": "F012",
+    "category": "security",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "A role field supplied in the registration body is ignored and the created user always has role PATIENT.",
+    "steps": [
+      "Use a valid profile (full_name, age, gender, phone) in every registration request",
+      "POST /api/auth/register with body including \"role\":\"ADMIN\"",
+      "Assert status 201",
+      "Read the user from the database and assert role is PATIENT"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01"
+    ]
+  },
+  {
+    "id": "F013",
+    "category": "functional",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "Registering an email that already exists, compared case-insensitively, returns 409.",
+    "steps": [
+      "Use a valid profile (full_name, age, gender, phone) in every registration request",
+      "Register 'dup@example.test'",
+      "Register 'DUP@example.test'",
+      "Assert second response status 409",
+      "Assert only one user row exists"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01"
+    ]
+  },
+  {
+    "id": "F014",
+    "category": "functional",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "Passwords of 7 characters or 129 characters return 422, while passwords of exactly 8 and exactly 128 characters are accepted.",
+    "steps": [
+      "Use a valid profile (full_name, age, gender, phone) in every registration request",
+      "Register with a 7-char password and assert 422",
+      "Register with a 129-char password and assert 422",
+      "Register with an 8-char password and assert 201",
+      "Register with a 128-char password and assert 201"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01"
+    ]
+  },
+  {
+    "id": "F015",
+    "category": "security",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "The stored password_hash starts with '$argon2' and never equals the plaintext password.",
+    "steps": [
+      "Use a valid profile (full_name, age, gender, phone) in every registration request",
+      "Register a user with password 'correct-horse'",
+      "Read password_hash from the database",
+      "Assert it starts with '$argon2' and differs from the plaintext"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01"
+    ]
+  },
+  {
+    "id": "F016",
+    "category": "security",
+    "story": "E1-S3",
+    "group": "B",
+    "description": "POST /api/auth/login with correct credentials returns 200 and a JWT access token with an expiry; a wrong password, an unknown email and a deactivated account all return 401 with the identical generic body.",
+    "steps": [
+      "Login with correct credentials and assert 200 and a decodable token with an exp claim",
+      "Login with a wrong password, an unknown email and a deactivated account",
+      "Assert all three return 401 with byte-identical JSON bodies"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01"
+    ]
+  },
+  {
+    "id": "F017",
+    "category": "security",
+    "story": "E1-S4",
+    "group": "C",
+    "description": "A request to a protected route with no token, a malformed token or an expired token returns 401.",
+    "steps": [
+      "Call a protected route with no Authorization header and assert 401",
+      "Call with 'Bearer garbage' and assert 401",
+      "Call with a token whose exp is in the past and assert 401"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-04"
+    ]
+  },
+  {
+    "id": "F018",
+    "category": "security",
+    "story": "E1-S4",
+    "group": "C",
+    "description": "The role is read from the database, so a valid token claiming role ADMIN for a user whose stored role is PATIENT receives 403 on an admin route.",
+    "steps": [
+      "Create a patient and forge a validly signed token with role claim ADMIN",
+      "Call an /api/admin route",
+      "Assert 403"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-04"
+    ]
+  },
+  {
+    "id": "F019",
+    "category": "security",
+    "story": "E1-S4",
+    "group": "C",
+    "description": "A user with the wrong role for a route receives 403, and a user of the right role requesting another user's object receives 404.",
+    "steps": [
+      "Call a doctor-only route as a patient and assert 403",
+      "Call GET /api/appointments/{id} as patient B for patient A's appointment and assert 404"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-04"
+    ]
+  },
+  {
+    "id": "F020",
+    "category": "security",
+    "story": "E1-S4",
+    "group": "C",
+    "description": "A user deactivated after logging in has the still-valid token rejected with 401 on the next request.",
+    "steps": [
+      "Login as a patient and keep the token",
+      "Deactivate the user directly in the database",
+      "Call a protected route with the token and assert 401"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-04"
+    ]
+  },
+  {
+    "id": "F021",
+    "category": "functional",
+    "story": "E1-S4",
+    "group": "C",
+    "description": "An ADMIN user receives 200 on patient routes, doctor routes and admin routes when the object exists.",
+    "steps": [
+      "Login as admin",
+      "Call a patient-scoped GET, a doctor-scoped GET and an admin GET",
+      "Assert each returns 200"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-04"
+    ]
+  },
+  {
+    "id": "F022",
+    "category": "functional",
+    "story": "E1-S5",
+    "group": "D",
+    "description": "GET /api/patients/me/profile returns 200 with the latest profile version for the logged-in patient.",
+    "steps": [
+      "Register and login as a patient",
+      "GET /api/patients/me/profile",
+      "Assert 200 and full_name, age, gender and phone match the registration data"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "NFR-02",
+      "NFR-03"
+    ]
+  },
+  {
+    "id": "F023",
+    "category": "functional",
+    "story": "E1-S5",
+    "group": "D",
+    "description": "PUT /api/patients/me/profile inserts a new version row and leaves all earlier version rows byte-identical.",
+    "steps": [
+      "PUT a changed phone number (other profile fields omitted and carried forward)",
+      "Count patient_profile_versions rows and assert it increased by exactly 1",
+      "Compare earlier rows with a snapshot taken before and assert they are unchanged"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "NFR-02",
+      "NFR-03"
+    ]
+  },
+  {
+    "id": "F024",
+    "category": "functional",
+    "story": "E1-S5",
+    "group": "D",
+    "description": "After two successive updates, GET /api/patients/me/profile returns the values from the second update.",
+    "steps": [
+      "PUT value A then PUT value B",
+      "GET the profile",
+      "Assert it returns value B"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "NFR-02",
+      "NFR-03"
+    ]
+  },
+  {
+    "id": "F025",
+    "category": "security",
+    "story": "E1-S5",
+    "group": "D",
+    "description": "A doctor calling /api/patients/me/profile receives 403 and a patient requesting another patient's profile by id receives 404.",
+    "steps": [
+      "Login as a doctor and call GET /api/patients/me/profile, assert 403",
+      "Login as patient B and GET /api/patients/{A-id}/profile, assert 404"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "NFR-02",
+      "NFR-03"
+    ]
+  },
+  {
+    "id": "F026",
+    "category": "security",
+    "story": "E1-S5",
+    "group": "D",
+    "description": "A profile update writes a log line containing user_id but none of the submitted profile values.",
+    "steps": [
+      "Capture logs while PUT-ing a unique name and phone",
+      "Assert a line includes user_id",
+      "Assert the unique name and phone appear in no log line"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "NFR-02",
+      "NFR-03"
+    ]
+  },
+  {
+    "id": "F027",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "A template of Monday 09:00-12:00 with 30-minute slots yields exactly 6 AVAILABLE slots for each Monday in the next 14 days.",
+    "steps": [
+      "Freeze the clock to a known Sunday",
+      "Run the generator for a doctor with a Monday 09:00-12:00/30 template",
+      "Assert exactly 6 slots per Monday in range, all with status AVAILABLE and 30-minute duration"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-03"
+    ]
+  },
+  {
+    "id": "F028",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "Slots are created only when now < start < now + 14 days; a slot starting in the past or 14 days or more ahead is never created.",
+    "steps": [
+      "Freeze the clock mid-way through a template day",
+      "Run the generator",
+      "Assert no slot has start <= now",
+      "Assert no slot has start >= now + 14 days"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-03"
+    ]
+  },
+  {
+    "id": "F029",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "Running the generator twice produces the same slot count and no duplicate (doctor_id, start) rows.",
+    "steps": [
+      "Run the generator and record the slot count",
+      "Run it again",
+      "Assert the count is unchanged and a GROUP BY doctor_id,start HAVING count>1 query returns zero rows"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-03"
+    ]
+  },
+  {
+    "id": "F030",
+    "category": "functional",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "With PROVIDER_TIMEZONE=Asia/Kolkata, a 09:00 template time is stored as 03:30 UTC.",
+    "steps": [
+      "Set PROVIDER_TIMEZONE=Asia/Kolkata",
+      "Generate slots for a 09:00 template",
+      "Assert the stored start time is 03:30 UTC"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-03"
+    ]
+  },
+  {
+    "id": "F031",
+    "category": "integration",
+    "story": "E2-S1",
+    "group": "B",
+    "description": "Starting the app after the clock advanced 5 days creates the slots for the newly in-window days without duplicating existing ones.",
+    "steps": [
+      "Generate slots at day 0",
+      "Advance the clock 5 days and run application startup",
+      "Assert new slots exist for days 14-19 and no duplicate rows exist"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-03"
+    ]
+  },
+  {
+    "id": "F032",
+    "category": "functional",
+    "story": "E2-S2",
+    "group": "D",
+    "description": "POST /api/admin/doctors with valid details returns 201 with a doctor_id, creates a user with role DOCTOR, stores the fee as \"500.00\", and generates slots for the next 14 days.",
+    "steps": [
+      "Login as admin",
+      "POST /api/admin/doctors with specialty, languages ['en','hi'], fee '500.00', initial password and a Monday 09:00-12:00/30 template",
+      "Assert 201 and non-null doctor_id",
+      "Assert the user has role DOCTOR",
+      "Assert 6 slots exist per Monday in range"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-10",
+      "NFR-01"
+    ]
+  },
+  {
+    "id": "F033",
+    "category": "security",
+    "story": "E2-S2",
+    "group": "D",
+    "description": "A non-admin caller receives 403 and an unauthenticated caller receives 401 on POST /api/admin/doctors.",
+    "steps": [
+      "POST as patient and assert 403",
+      "POST as doctor and assert 403",
+      "POST with no token and assert 401"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-10",
+      "NFR-01"
+    ]
+  },
+  {
+    "id": "F034",
+    "category": "functional",
+    "story": "E2-S2",
+    "group": "D",
+    "description": "A template whose end is not after start, whose slot length is zero or negative, or whose slot length does not divide the window returns 422 and persists nothing.",
+    "steps": [
+      "POST with end == start and assert 422",
+      "POST with slot length 0 and assert 422",
+      "POST with a 100-minute window and 30-minute slots and assert 422",
+      "Assert user, profile, template and slot counts are unchanged"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-10",
+      "NFR-01"
+    ]
+  },
+  {
+    "id": "F035",
+    "category": "functional",
+    "story": "E2-S2",
+    "group": "D",
+    "description": "A fee that is non-numeric, negative or has more than 2 decimal places returns 422.",
+    "steps": [
+      "POST with fee 'abc' and assert 422",
+      "POST with fee '-1.00' and assert 422",
+      "POST with fee '500.123' and assert 422"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-10",
+      "NFR-01"
+    ]
+  },
+  {
+    "id": "F036",
+    "category": "functional",
+    "story": "E2-S2",
+    "group": "D",
+    "description": "Onboarding with an email that already exists returns 409 and creates nothing.",
+    "steps": [
+      "Onboard a doctor",
+      "Onboard again with the same email",
+      "Assert 409",
+      "Assert only one user row for the email"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-10",
+      "NFR-01"
+    ]
+  },
+  {
+    "id": "F037",
+    "category": "integration",
+    "story": "E2-S2",
+    "group": "D",
+    "description": "The newly onboarded doctor can log in with the admin-supplied initial password and receives a token whose database role is DOCTOR.",
+    "steps": [
+      "Onboard a doctor with initial password",
+      "POST /api/auth/login with those credentials",
+      "Assert 200",
+      "Call a doctor-only route and assert 200"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-10",
+      "NFR-01"
+    ]
+  },
+  {
+    "id": "F038",
+    "category": "functional",
+    "story": "E2-S3",
+    "group": "E",
+    "description": "GET /api/doctors/me/slots?from=&to= returns only the caller's slots in the range with their status.",
+    "steps": [
+      "Login as doctor A with doctor B also having slots",
+      "GET /api/doctors/me/slots for the next 7 days",
+      "Assert every returned slot belongs to doctor A and each has a status field"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-03"
+    ]
+  },
+  {
+    "id": "F039",
+    "category": "functional",
+    "story": "E2-S3",
+    "group": "E",
+    "description": "PUT /api/doctors/me/slots/{id}/block on an AVAILABLE slot returns 200 and the slot becomes BLOCKED.",
+    "steps": [
+      "Pick an AVAILABLE slot",
+      "PUT block",
+      "Assert 200",
+      "Read the slot and assert BLOCKED"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-03"
+    ]
+  },
+  {
+    "id": "F040",
+    "category": "functional",
+    "story": "E2-S3",
+    "group": "E",
+    "description": "Blocking a BOOKED slot returns 409 and the slot and its appointment remain unchanged.",
+    "steps": [
+      "Book a slot as a patient",
+      "PUT block as the doctor",
+      "Assert 409",
+      "Assert the slot is still BOOKED and the appointment still BOOKED"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-03"
+    ]
+  },
+  {
+    "id": "F041",
+    "category": "functional",
+    "story": "E2-S3",
+    "group": "E",
+    "description": "PUT /api/doctors/me/slots/{id}/unblock on a BLOCKED slot returns 200 and the slot becomes AVAILABLE, while unblocking a non-BLOCKED slot returns 409.",
+    "steps": [
+      "Block a slot then PUT unblock and assert 200 and AVAILABLE",
+      "PUT unblock on an AVAILABLE slot and assert 409"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-03"
+    ]
+  },
+  {
+    "id": "F042",
+    "category": "security",
+    "story": "E2-S3",
+    "group": "E",
+    "description": "A doctor blocking another doctor's slot receives 404 and a patient calling the block route receives 403.",
+    "steps": [
+      "Login as doctor A and PUT block on doctor B's slot id, assert 404",
+      "Login as patient and PUT block, assert 403"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-03"
+    ]
+  },
+  {
+    "id": "F043",
+    "category": "functional",
+    "story": "E2-S4",
+    "group": "E",
+    "description": "GET /api/doctors?specialty=Cardiology returns only doctors with that specialty, and ?language=hi returns only doctors who speak that language.",
+    "steps": [
+      "Seed doctors with different specialties and languages",
+      "GET with specialty filter and assert every result matches",
+      "GET with language filter and assert every result matches"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-02",
+      "AC-03"
+    ]
+  },
+  {
+    "id": "F044",
+    "category": "functional",
+    "story": "E2-S4",
+    "group": "E",
+    "description": "GET /api/doctors?available_from=&available_to= returns only doctors with at least one AVAILABLE slot inside the range.",
+    "steps": [
+      "Block or book all of doctor A's slots on day 3",
+      "GET with a day-3 range",
+      "Assert doctor A is absent and a doctor with open day-3 slots is present"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-02",
+      "AC-03"
+    ]
+  },
+  {
+    "id": "F045",
+    "category": "functional",
+    "story": "E2-S4",
+    "group": "E",
+    "description": "The sort parameter orders results ascending by earliest open slot, by fee, or by name.",
+    "steps": [
+      "GET ?sort=earliest_slot and assert nondecreasing earliest slot",
+      "GET ?sort=fee and assert nondecreasing fee",
+      "GET ?sort=name and assert alphabetical order"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-02",
+      "AC-03"
+    ]
+  },
+  {
+    "id": "F046",
+    "category": "functional",
+    "story": "E2-S4",
+    "group": "E",
+    "description": "Each result includes the fee as a string such as \"500.00\" and the earliest open slot, and deactivated doctors never appear.",
+    "steps": [
+      "Deactivate a doctor",
+      "GET /api/doctors",
+      "Assert the deactivated doctor is absent",
+      "Assert each result has fee matching ^\\d+\\.\\d{2}$ and an earliest_slot field"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-02",
+      "AC-03"
+    ]
+  },
+  {
+    "id": "F047",
+    "category": "functional",
+    "story": "E2-S4",
+    "group": "E",
+    "description": "GET /api/doctors/{id}/slots lists only AVAILABLE slots starting after now and within 14 days; BOOKED, BLOCKED and past slots are never listed.",
+    "steps": [
+      "Set up AVAILABLE, BOOKED, BLOCKED and past slots for one doctor",
+      "GET /api/doctors/{id}/slots",
+      "Assert only the AVAILABLE future slots are returned"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-02",
+      "AC-03"
+    ]
+  },
+  {
+    "id": "F048",
+    "category": "security",
+    "story": "E2-S4",
+    "group": "E",
+    "description": "Unauthenticated calls to the search and slot endpoints return 401.",
+    "steps": [
+      "GET /api/doctors with no token and assert 401",
+      "GET /api/doctors/{id}/slots with no token and assert 401"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-02",
+      "AC-03"
+    ]
+  },
+  {
+    "id": "F049",
+    "category": "functional",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "VideoService, PaymentService (charge and refund), PrescriptionService and NotificationService interfaces exist and the default application wiring binds a stub for each.",
+    "steps": [
+      "Build the app with default settings",
+      "Resolve each interface from the dependency container",
+      "Assert each resolves to a stub implementation"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-06"
+    ]
+  },
+  {
+    "id": "F050",
+    "category": "security",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "Each stub call emits exactly one JSON log line containing only identifiers such as appointment_id and event type.",
+    "steps": [
+      "Call each stub once with an appointment id",
+      "Capture logs and assert exactly one line per call",
+      "Assert each line contains appointment_id and no names, emails or free text"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-06"
+    ]
+  },
+  {
+    "id": "F051",
+    "category": "functional",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "Stub calls leave the appointment_events row count unchanged.",
+    "steps": [
+      "Count appointment_events rows",
+      "Call every stub method",
+      "Assert the row count is unchanged"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-06"
+    ]
+  },
+  {
+    "id": "F052",
+    "category": "functional",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "The video stub returns a deterministic placeholder join URL containing the appointment id.",
+    "steps": [
+      "Call VideoService.join_url for appointment 42 twice",
+      "Assert both calls return the same URL",
+      "Assert the URL contains '42'"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-06"
+    ]
+  },
+  {
+    "id": "F053",
+    "category": "functional",
+    "story": "E3-S1",
+    "group": "B",
+    "description": "A test can override any stub with a spy through dependency injection and read its recorded calls.",
+    "steps": [
+      "Override PaymentService with a spy",
+      "Invoke a service that refunds",
+      "Assert the spy recorded exactly one refund call with the appointment id"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-06"
+    ]
+  },
+  {
+    "id": "F054",
+    "category": "functional",
+    "story": "E3-S2",
+    "group": "F",
+    "description": "POST /api/appointments with an AVAILABLE slot_id returns 201 with an appointment_id and status BOOKED, the slot becomes BOOKED, and exactly one BOOKED event is appended.",
+    "steps": [
+      "Login as a patient",
+      "POST /api/appointments {slot_id}",
+      "Assert 201, non-null appointment_id and status BOOKED",
+      "Assert the slot is BOOKED",
+      "Assert exactly one appointment_events row of type BOOKED"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-04",
+      "AC-05",
+      "NFR-08"
+    ]
+  },
+  {
+    "id": "F055",
+    "category": "performance",
+    "story": "E3-S2",
+    "group": "F",
+    "description": "20 concurrent POST /api/appointments requests for the same slot return exactly one 201 and nineteen 409 responses, and none return 503.",
+    "steps": [
+      "Create one AVAILABLE slot and 20 patient tokens",
+      "Fire 20 simultaneous POSTs for that slot",
+      "Assert exactly one 201",
+      "Assert exactly nineteen 409",
+      "Assert zero 503",
+      "Assert exactly one appointment row exists"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-04",
+      "AC-05",
+      "NFR-08"
+    ]
+  },
+  {
+    "id": "F056",
+    "category": "functional",
+    "story": "E3-S2",
+    "group": "F",
+    "description": "Booking a BOOKED, BLOCKED, past or more-than-14-days-ahead slot returns 409 and creates no appointment.",
+    "steps": [
+      "Attempt to book each of the four slot types",
+      "Assert 409 for each",
+      "Assert appointment count is unchanged"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-04",
+      "AC-05",
+      "NFR-08"
+    ]
+  },
+  {
+    "id": "F057",
+    "category": "security",
+    "story": "E3-S2",
+    "group": "F",
+    "description": "Booking a slot belonging to a deactivated doctor returns 409 even when the slot id is supplied directly.",
+    "steps": [
+      "Deactivate a doctor",
+      "POST /api/appointments with one of that doctor's slot ids",
+      "Assert 409",
+      "Assert the slot is still AVAILABLE"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-04",
+      "AC-05",
+      "NFR-08"
+    ]
+  },
+  {
+    "id": "F058",
+    "category": "security",
+    "story": "E3-S2",
+    "group": "F",
+    "description": "Only PATIENT users may book: a doctor receives 403 and an unauthenticated caller receives 401.",
+    "steps": [
+      "POST as doctor and assert 403",
+      "POST with no token and assert 401"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-04",
+      "AC-05",
+      "NFR-08"
+    ]
+  },
+  {
+    "id": "F059",
+    "category": "integration",
+    "story": "E3-S2",
+    "group": "F",
+    "description": "A successful booking calls the payment stub exactly once and the response includes the fee as a string such as \"500.00\".",
+    "steps": [
+      "Override PaymentService with a spy",
+      "Book a slot",
+      "Assert the spy charge call count is 1",
+      "Assert the response fee equals the doctor's fee string"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-04",
+      "AC-05",
+      "NFR-08"
+    ]
+  },
+  {
+    "id": "F060",
+    "category": "functional",
+    "story": "E3-S3",
+    "group": "G",
+    "description": "A patient cancelling exactly 60:00 before start receives 200, the appointment becomes CANCELLED, the slot returns to AVAILABLE, one CANCELLED event is appended and the refund stub is called exactly once.",
+    "steps": [
+      "Book a slot starting at now+60:00",
+      "Patient POST /api/appointments/{id}/cancel",
+      "Assert 200 and status CANCELLED",
+      "Assert slot AVAILABLE",
+      "Assert one CANCELLED event",
+      "Assert refund spy call count is 1"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-06"
+    ]
+  },
+  {
+    "id": "F061",
+    "category": "functional",
+    "story": "E3-S3",
+    "group": "G",
+    "description": "A patient cancelling at 59:59 before start, or after the start time, receives 409 and nothing changes and the refund stub is not called.",
+    "steps": [
+      "Book a slot starting at now+59:59",
+      "Patient cancel and assert 409",
+      "Advance the clock past start and cancel again, assert 409",
+      "Assert appointment still BOOKED, no new events, refund spy count 0"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-06"
+    ]
+  },
+  {
+    "id": "F062",
+    "category": "security",
+    "story": "E3-S3",
+    "group": "G",
+    "description": "A patient cancelling another patient's appointment receives 404.",
+    "steps": [
+      "Patient A books",
+      "Patient B POST cancel on A's appointment",
+      "Assert 404",
+      "Assert A's appointment is still BOOKED"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-06"
+    ]
+  },
+  {
+    "id": "F063",
+    "category": "functional",
+    "story": "E3-S3",
+    "group": "G",
+    "description": "A doctor cancelling a BOOKED appointment 10 minutes before start receives 200, the slot becomes BLOCKED, the event records actor role DOCTOR and the refund stub is called exactly once.",
+    "steps": [
+      "Book a slot starting at now+10 min",
+      "Doctor POST cancel",
+      "Assert 200 and CANCELLED",
+      "Assert slot BLOCKED",
+      "Assert the event actor_role is DOCTOR",
+      "Assert refund spy count is 1"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-06"
+    ]
+  },
+  {
+    "id": "F064",
+    "category": "functional",
+    "story": "E3-S3",
+    "group": "G",
+    "description": "Cancelling a CHECKED_IN, IN_PROGRESS, COMPLETED, CANCELLED or NO_SHOW appointment returns 409 InvalidAppointmentStateException and appends no event.",
+    "steps": [
+      "Move an appointment to each non-BOOKED state",
+      "POST cancel for each",
+      "Assert 409",
+      "Assert event count unchanged"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-06"
+    ]
+  },
+  {
+    "id": "F065",
+    "category": "functional",
+    "story": "E3-S4",
+    "group": "H",
+    "description": "POST /api/appointments/{id}/reschedule {new_slot_id} returns 200 with the same appointment_id, the new slot becomes BOOKED and the old slot becomes AVAILABLE.",
+    "steps": [
+      "Book slot X",
+      "POST reschedule to open slot Y of the same doctor",
+      "Assert 200 and unchanged appointment_id",
+      "Assert slot Y BOOKED",
+      "Assert slot X AVAILABLE"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-07",
+      "NFR-02"
+    ]
+  },
+  {
+    "id": "F066",
+    "category": "functional",
+    "story": "E3-S4",
+    "group": "H",
+    "description": "A RESCHEDULED event is appended containing both the old slot id and the new slot id.",
+    "steps": [
+      "Reschedule X to Y",
+      "Read the newest appointment_events row",
+      "Assert type RESCHEDULED, old_slot_id X and new_slot_id Y"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-07",
+      "NFR-02"
+    ]
+  },
+  {
+    "id": "F067",
+    "category": "functional",
+    "story": "E3-S4",
+    "group": "H",
+    "description": "A target slot that is booked, blocked, already started, outside the 14-day window, the same slot, or another doctor's returns 409 and changes nothing.",
+    "steps": [
+      "Attempt reschedule to each of the six invalid targets",
+      "Assert 409 for each",
+      "Assert the appointment slot, both slots' statuses and event count are unchanged"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-07",
+      "NFR-02"
+    ]
+  },
+  {
+    "id": "F068",
+    "category": "functional",
+    "story": "E3-S4",
+    "group": "H",
+    "description": "Rescheduling less than 60 minutes before the current start returns 409, while exactly 60:00 before start returns 200.",
+    "steps": [
+      "Book a slot at now+59:59 and reschedule, assert 409",
+      "Book a slot at now+60:00 and reschedule, assert 200"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-07",
+      "NFR-02"
+    ]
+  },
+  {
+    "id": "F069",
+    "category": "functional",
+    "story": "E3-S4",
+    "group": "H",
+    "description": "Rescheduling an appointment in CHECKED_IN, IN_PROGRESS, COMPLETED, CANCELLED or NO_SHOW returns 409.",
+    "steps": [
+      "Move an appointment to each non-BOOKED state",
+      "POST reschedule for each",
+      "Assert 409"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-07",
+      "NFR-02"
+    ]
+  },
+  {
+    "id": "F070",
+    "category": "integration",
+    "story": "E3-S4",
+    "group": "H",
+    "description": "If a failure is injected after the target slot is claimed, the transaction rolls back and both slots and the appointment keep their original state.",
+    "steps": [
+      "Inject a failing event-insert via a test hook",
+      "POST reschedule",
+      "Assert a non-2xx response",
+      "Assert target slot AVAILABLE, old slot BOOKED, appointment slot unchanged"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-07",
+      "NFR-02"
+    ]
+  },
+  {
+    "id": "F071",
+    "category": "functional",
+    "story": "E3-S5",
+    "group": "H",
+    "description": "The doctor can move an appointment BOOKED to CHECKED_IN to IN_PROGRESS to COMPLETED, each call returns 200, and exactly one event with actor role DOCTOR is appended per transition.",
+    "steps": [
+      "POST /api/appointments/{id}/status {status:'CHECKED_IN'} then 'IN_PROGRESS' then 'COMPLETED'",
+      "Assert 200 each time",
+      "Assert the event count increased by exactly 1 per call",
+      "Assert actor_role is DOCTOR"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-08",
+      "NFR-02"
+    ]
+  },
+  {
+    "id": "F072",
+    "category": "functional",
+    "story": "E3-S5",
+    "group": "H",
+    "description": "Invalid transitions (BOOKED to IN_PROGRESS, BOOKED to COMPLETED, CHECKED_IN to CANCELLED, and any change from COMPLETED, CANCELLED or NO_SHOW) return 409 InvalidAppointmentStateException and append no event.",
+    "steps": [
+      "Attempt each invalid transition",
+      "Assert 409 for each",
+      "Assert event count unchanged and status unchanged"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-08",
+      "NFR-02"
+    ]
+  },
+  {
+    "id": "F073",
+    "category": "functional",
+    "story": "E3-S5",
+    "group": "H",
+    "description": "NO_SHOW is refused with 409 before the start time and accepted with 200 from BOOKED or CHECKED_IN after the start time, and the slot stays BOOKED.",
+    "steps": [
+      "Mark NO_SHOW before start and assert 409",
+      "Advance the clock past start and mark NO_SHOW from BOOKED, assert 200",
+      "Repeat from CHECKED_IN, assert 200",
+      "Assert slot status BOOKED"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-08",
+      "NFR-02"
+    ]
+  },
+  {
+    "id": "F074",
+    "category": "functional",
+    "story": "E3-S5",
+    "group": "H",
+    "description": "GET /api/doctors/me/queue?date=YYYY-MM-DD returns only the caller's appointments whose start falls on that date in PROVIDER_TIMEZONE, ordered by start time.",
+    "steps": [
+      "Set PROVIDER_TIMEZONE=Asia/Kolkata and create appointments at 23:30 and 00:30 local time on adjacent days",
+      "GET queue for the first date",
+      "Assert only the 23:30 appointment is present",
+      "Assert results are ordered ascending by start",
+      "Assert another doctor's appointments are absent"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-08",
+      "NFR-02"
+    ]
+  },
+  {
+    "id": "F075",
+    "category": "functional",
+    "story": "E3-S5",
+    "group": "H",
+    "description": "Each appointment response includes allowed_actions that match the state machine, and NO_SHOW appears only once the start time has passed.",
+    "steps": [
+      "GET a BOOKED appointment before start and assert allowed_actions contains CHECKED_IN and not NO_SHOW",
+      "Advance the clock past start and assert NO_SHOW is present",
+      "GET a COMPLETED appointment and assert allowed_actions is empty"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-08",
+      "NFR-02"
+    ]
+  },
+  {
+    "id": "F076",
+    "category": "security",
+    "story": "E3-S5",
+    "group": "H",
+    "description": "Only the appointment's doctor can transition it: another doctor receives 404 and a patient receives 403.",
+    "steps": [
+      "Doctor B POST status on doctor A's appointment and assert 404",
+      "Patient POST status and assert 403"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-08",
+      "NFR-02"
+    ]
+  },
+  {
+    "id": "F077",
+    "category": "functional",
+    "story": "E4-S1",
+    "group": "I",
+    "description": "The appointment's doctor can POST /api/appointments/{id}/notes {text} after COMPLETED, receives 201 each time, and multiple notes accumulate.",
+    "steps": [
+      "Complete an appointment",
+      "POST two notes as the doctor",
+      "Assert 201 twice",
+      "GET notes and assert both are present in creation order"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-09",
+      "NFR-02",
+      "NFR-03",
+      "NFR-08"
+    ]
+  },
+  {
+    "id": "F078",
+    "category": "security",
+    "story": "E4-S1",
+    "group": "I",
+    "description": "Adding a note to an appointment that is not COMPLETED returns 409; another doctor receives 404 and a patient receives 403.",
+    "steps": [
+      "POST a note while BOOKED and assert 409",
+      "POST as doctor B on a completed appointment of doctor A and assert 404",
+      "POST as the patient and assert 403"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-09",
+      "NFR-02",
+      "NFR-03",
+      "NFR-08"
+    ]
+  },
+  {
+    "id": "F079",
+    "category": "functional",
+    "story": "E4-S1",
+    "group": "I",
+    "description": "A note of 5000 characters is accepted, while 5001 characters or empty text returns 422.",
+    "steps": [
+      "POST 5000-char text and assert 201",
+      "POST 5001-char text and assert 422",
+      "POST empty text and assert 422"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-09",
+      "NFR-02",
+      "NFR-03",
+      "NFR-08"
+    ]
+  },
+  {
+    "id": "F080",
+    "category": "security",
+    "story": "E4-S1",
+    "group": "I",
+    "description": "PUT, PATCH and DELETE on a note return 405, and a direct SQL UPDATE or DELETE on consultation_notes is rejected by the trigger.",
+    "steps": [
+      "Send PUT, PATCH and DELETE to /api/appointments/{id}/notes/{note_id} and assert 405",
+      "Run raw UPDATE and DELETE on consultation_notes and assert both raise errors"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-09",
+      "NFR-02",
+      "NFR-03",
+      "NFR-08"
+    ]
+  },
+  {
+    "id": "F081",
+    "category": "security",
+    "story": "E4-S1",
+    "group": "I",
+    "description": "GET notes returns 200 to that appointment's patient, its doctor and an admin, and 404 to a different patient or a different doctor.",
+    "steps": [
+      "GET as the patient, doctor and admin and assert 200",
+      "GET as another patient and assert 404",
+      "GET as another doctor and assert 404"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-09",
+      "NFR-02",
+      "NFR-03",
+      "NFR-08"
+    ]
+  },
+  {
+    "id": "F082",
+    "category": "security",
+    "story": "E4-S1",
+    "group": "I",
+    "description": "Posting a note logs the appointment_id and user_id but never the note text.",
+    "steps": [
+      "Capture logs while POSTing a note with a unique marker string",
+      "Assert a line contains the appointment_id",
+      "Assert the marker string appears in no log line"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-09",
+      "NFR-02",
+      "NFR-03",
+      "NFR-08"
+    ]
+  },
+  {
+    "id": "F083",
+    "category": "functional",
+    "story": "E4-S2",
+    "group": "G",
+    "description": "GET /api/admin/users returns all users with role and active flag, and ?role=DOCTOR filters to doctors only.",
+    "steps": [
+      "Seed one admin, two doctors and two patients",
+      "GET /api/admin/users and assert 5 rows with role and active fields",
+      "GET ?role=DOCTOR and assert 2 rows"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "NFR-04"
+    ]
+  },
+  {
+    "id": "F084",
+    "category": "functional",
+    "story": "E4-S2",
+    "group": "G",
+    "description": "Deactivating a patient returns 200, after which that patient's login returns 401, their existing token returns 401, and their existing appointments remain and can still be processed by the doctor.",
+    "steps": [
+      "Book an appointment as patient P",
+      "Admin PUT /api/admin/users/{P}/deactivate and assert 200",
+      "Patient login and old token both return 401",
+      "Doctor checks the appointment in and assert 200"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "NFR-04"
+    ]
+  },
+  {
+    "id": "F085",
+    "category": "functional",
+    "story": "E4-S2",
+    "group": "G",
+    "description": "Deactivating a doctor with a BOOKED, CHECKED_IN or IN_PROGRESS appointment returns 409, while a doctor with only terminal appointments deactivates with 200 and disappears from search.",
+    "steps": [
+      "Deactivate a doctor with a BOOKED appointment and assert 409",
+      "Complete the appointment and deactivate again, assert 200",
+      "GET /api/doctors and assert the doctor is absent"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "NFR-04"
+    ]
+  },
+  {
+    "id": "F086",
+    "category": "security",
+    "story": "E4-S2",
+    "group": "G",
+    "description": "An admin deactivating their own account receives 409 and remains active.",
+    "steps": [
+      "Admin PUT deactivate on own id",
+      "Assert 409",
+      "Read the user and assert active is true"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "NFR-04"
+    ]
+  },
+  {
+    "id": "F087",
+    "category": "functional",
+    "story": "E4-S2",
+    "group": "G",
+    "description": "Reactivating a user returns 200, the user can log in again, and a reactivated doctor reappears in search.",
+    "steps": [
+      "Deactivate then PUT reactivate a doctor",
+      "Doctor login returns 200",
+      "GET /api/doctors and assert the doctor is present"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "NFR-04"
+    ]
+  },
+  {
+    "id": "F088",
+    "category": "functional",
+    "story": "E4-S2",
+    "group": "G",
+    "description": "PUT /api/admin/patients/{patient_id}/profile with changed full_name, age, gender or phone inserts a new profile version for that patient and leaves earlier versions unchanged.",
+    "steps": [
+      "Admin PUT changed profile fields for patient P",
+      "Assert 200",
+      "Assert version count increased by 1",
+      "Assert earlier rows unchanged"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "NFR-04"
+    ]
+  },
+  {
+    "id": "F089",
+    "category": "functional",
+    "story": "E4-S3",
+    "group": "I",
+    "description": "GET /api/appointments/mine returns only the caller's appointments ordered by start time, each with status, fee string, doctor name and allowed_actions.",
+    "steps": [
+      "Patients A and B each book appointments",
+      "GET mine as A",
+      "Assert only A's appointments, ordered by start",
+      "Assert each has status, fee, doctor name and allowed_actions"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-04",
+      "AC-09"
+    ]
+  },
+  {
+    "id": "F090",
+    "category": "security",
+    "story": "E4-S3",
+    "group": "I",
+    "description": "GET /api/appointments/{id} for another patient's appointment returns 404, for the appointment's own doctor or an admin returns 200.",
+    "steps": [
+      "GET as patient B for A's appointment and assert 404",
+      "GET as A's doctor and assert 200",
+      "GET as admin and assert 200"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-04",
+      "AC-09"
+    ]
+  },
+  {
+    "id": "F091",
+    "category": "functional",
+    "story": "E4-S3",
+    "group": "I",
+    "description": "For a patient, allowed_actions includes CANCEL and RESCHEDULE when start minus now is at least 60 minutes and excludes both inside that window.",
+    "steps": [
+      "Book a slot at now+60:00 and assert both actions present",
+      "Advance the clock by 1 second and assert both absent"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-04",
+      "AC-09"
+    ]
+  },
+  {
+    "id": "F092",
+    "category": "functional",
+    "story": "E4-S3",
+    "group": "I",
+    "description": "join_url is non-null for the patient and the doctor while the status is BOOKED, CHECKED_IN or IN_PROGRESS, and null for COMPLETED, CANCELLED and NO_SHOW.",
+    "steps": [
+      "GET an appointment in each of the six statuses",
+      "Assert join_url non-null for the three active ones",
+      "Assert join_url null for the three terminal ones"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-04",
+      "AC-09"
+    ]
+  },
+  {
+    "id": "F093",
+    "category": "security",
+    "story": "E5-S1",
+    "group": "D",
+    "description": "A successful login stores the access token in sessionStorage and never in localStorage.",
+    "steps": [
+      "Log in through the UI",
+      "Read sessionStorage and assert the token key exists",
+      "Read localStorage and assert it holds no token"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-04"
+    ]
+  },
+  {
+    "id": "F094",
+    "category": "functional",
+    "story": "E5-S1",
+    "group": "D",
+    "description": "After login a patient lands on the doctor search route, a doctor on the daily queue route and an admin on the user list route.",
+    "steps": [
+      "Log in as each role",
+      "Assert the URL is /doctors for patient, /queue for doctor and /admin/users for admin"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-04"
+    ]
+  },
+  {
+    "id": "F095",
+    "category": "functional",
+    "story": "E5-S1",
+    "group": "D",
+    "description": "An unauthenticated visit to a protected route redirects to /login, a wrong-role visit shows the not-allowed page, and an unknown or another user's object shows the not-found page.",
+    "steps": [
+      "Visit /queue unauthenticated and assert /login",
+      "Visit /admin/users as patient and assert the not-allowed page",
+      "Visit an appointment URL for another user's object and assert the not-found page"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-04"
+    ]
+  },
+  {
+    "id": "F096",
+    "category": "functional",
+    "story": "E5-S1",
+    "group": "D",
+    "description": "A 401 from any API call clears the session and redirects to /login, and a 503 shows a generic try-again message.",
+    "steps": [
+      "Mock a 401 response and assert sessionStorage is cleared and URL is /login",
+      "Mock a 503 response and assert the text 'try again' is shown with no technical detail"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-04"
+    ]
+  },
+  {
+    "id": "F097",
+    "category": "ui",
+    "story": "E5-S1",
+    "group": "D",
+    "description": "Register and login screens show a duplicate-email message on 409 and one generic message on login failure, and have no horizontal scroll at 375px and 1280px.",
+    "steps": [
+      "Submit register with a duplicate email and assert the inline message",
+      "Submit wrong login credentials and assert the single generic message",
+      "At 375px and at 1280px assert document scrollWidth <= clientWidth"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-04"
+    ]
+  },
+  {
+    "id": "F098",
+    "category": "ui",
+    "story": "E5-S1",
+    "group": "D",
+    "description": "Error messages are rendered in an ARIA live region, and every screen exposes loading, empty and error states.",
+    "steps": [
+      "Trigger a login error and assert the message container has aria-live",
+      "Render a list screen with loading, empty and error mock states and assert each is displayed"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "NFR-04"
+    ]
+  },
+  {
+    "id": "F099",
+    "category": "ui",
+    "story": "E5-S2",
+    "group": "G",
+    "description": "The search page offers specialty, language, date-range filters and a sort control, lists results with the fee such as \"500.00\", and shows an empty state when nothing matches.",
+    "steps": [
+      "Open the search page as a patient",
+      "Apply a specialty filter and assert results update",
+      "Assert each result card shows its fee",
+      "Apply filters matching nothing and assert the empty state"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-02",
+      "AC-03",
+      "AC-04"
+    ]
+  },
+  {
+    "id": "F100",
+    "category": "ui",
+    "story": "E5-S2",
+    "group": "G",
+    "description": "The doctor detail page shows open slots for the next 14 days grouped by date with times in browser-local zone and abbreviation such as '10:30 IST'.",
+    "steps": [
+      "Open a doctor detail page with browser timezone Asia/Kolkata",
+      "Assert slots are grouped by date",
+      "Assert a slot label matches '\\d{2}:\\d{2} IST'"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-02",
+      "AC-03",
+      "AC-04"
+    ]
+  },
+  {
+    "id": "F101",
+    "category": "ui",
+    "story": "E5-S2",
+    "group": "G",
+    "description": "Selecting a slot and confirming shows a booking confirmation with doctor, local time and fee.",
+    "steps": [
+      "Select a slot and press Confirm",
+      "Assert navigation to the confirmation view",
+      "Assert doctor name, local time and fee are shown"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-02",
+      "AC-03",
+      "AC-04"
+    ]
+  },
+  {
+    "id": "F102",
+    "category": "ui",
+    "story": "E5-S2",
+    "group": "G",
+    "description": "A 409 on booking shows an inline message and refreshes the slot list so the taken slot disappears.",
+    "steps": [
+      "Mock POST /api/appointments returning 409 and a refreshed slot list without the slot",
+      "Confirm booking",
+      "Assert the inline message",
+      "Assert the slot is no longer listed"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-02",
+      "AC-03",
+      "AC-04"
+    ]
+  },
+  {
+    "id": "F103",
+    "category": "ui",
+    "story": "E5-S2",
+    "group": "G",
+    "description": "At 375px the patient screens have no horizontal scroll and every interactive control is at least 44px by 44px.",
+    "steps": [
+      "Set viewport 375x800",
+      "On search and detail pages assert scrollWidth <= clientWidth",
+      "Measure all buttons and links and assert each bounding box >= 44px in both dimensions"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-02",
+      "AC-03",
+      "AC-04"
+    ]
+  },
+  {
+    "id": "F104",
+    "category": "ui",
+    "story": "E5-S3",
+    "group": "J",
+    "description": "My appointments lists each appointment with a status text label, and shows a 'Join video visit' control only for BOOKED, CHECKED_IN and IN_PROGRESS.",
+    "steps": [
+      "Render appointments in all six statuses",
+      "Assert each card displays the status as text",
+      "Assert 'Join video visit' exists on the three active cards and not on the three terminal cards"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "AC-06",
+      "AC-07",
+      "AC-09"
+    ]
+  },
+  {
+    "id": "F105",
+    "category": "ui",
+    "story": "E5-S3",
+    "group": "J",
+    "description": "Inside the last 60 minutes before start, Cancel and Reschedule are disabled with a visible explanation; outside it they are enabled.",
+    "steps": [
+      "Render an appointment starting in 59 minutes",
+      "Assert Cancel and Reschedule are disabled and an explanation is visible",
+      "Render one starting in 61 minutes and assert both enabled"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "AC-06",
+      "AC-07",
+      "AC-09"
+    ]
+  },
+  {
+    "id": "F106",
+    "category": "ui",
+    "story": "E5-S3",
+    "group": "J",
+    "description": "Confirming cancel updates the card to CANCELLED, and a 409 response shows an inline message instead.",
+    "steps": [
+      "Click Cancel and Confirm with the API mocked to 200 and assert the card shows CANCELLED",
+      "Mock 409 and assert the inline message and unchanged status"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "AC-06",
+      "AC-07",
+      "AC-09"
+    ]
+  },
+  {
+    "id": "F107",
+    "category": "ui",
+    "story": "E5-S3",
+    "group": "J",
+    "description": "Reschedule lets the patient pick another open slot of the same doctor and the card then shows the new time.",
+    "steps": [
+      "Click Reschedule",
+      "Pick a different slot",
+      "Confirm",
+      "Assert the card time equals the new slot time"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "AC-06",
+      "AC-07",
+      "AC-09"
+    ]
+  },
+  {
+    "id": "F108",
+    "category": "ui",
+    "story": "E5-S3",
+    "group": "J",
+    "description": "The consultation notes view for a completed appointment lists notes read-only with no edit or delete controls.",
+    "steps": [
+      "Open a completed appointment with two notes",
+      "Assert both note texts are shown",
+      "Assert no edit, delete or input controls are present"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "AC-06",
+      "AC-07",
+      "AC-09"
+    ]
+  },
+  {
+    "id": "F109",
+    "category": "ui",
+    "story": "E5-S3",
+    "group": "J",
+    "description": "The profile form saves changes, shows a success message, and re-loading the page shows the saved values.",
+    "steps": [
+      "Edit the phone field and submit",
+      "Assert a success message",
+      "Reload the page and assert the new value is displayed"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "AC-06",
+      "AC-07",
+      "AC-09"
+    ]
+  },
+  {
+    "id": "F110",
+    "category": "ui",
+    "story": "E5-S4",
+    "group": "J",
+    "description": "The queue has a date picker and lists appointments with times in the provider timezone including its label.",
+    "steps": [
+      "Open /queue as a doctor",
+      "Pick a date",
+      "Assert listed times carry the provider timezone label such as 'IST' or 'UTC'"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-08",
+      "AC-09"
+    ]
+  },
+  {
+    "id": "F111",
+    "category": "ui",
+    "story": "E5-S4",
+    "group": "J",
+    "description": "Each queue row shows only the action buttons listed in allowed_actions, and Mark NO_SHOW is disabled with an explanation before the start time.",
+    "steps": [
+      "Render a row with allowed_actions ['CHECKED_IN'] and assert exactly one action button",
+      "Render a BOOKED row before start and assert Mark NO_SHOW is disabled with explanatory text"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-08",
+      "AC-09"
+    ]
+  },
+  {
+    "id": "F112",
+    "category": "ui",
+    "story": "E5-S4",
+    "group": "J",
+    "description": "Clicking a status action updates the row on success, and a 409 shows an inline message and refreshes the queue.",
+    "steps": [
+      "Click Check in with the API mocked to 200 and assert the row status",
+      "Mock 409 and assert the inline message and a queue refetch"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-08",
+      "AC-09"
+    ]
+  },
+  {
+    "id": "F113",
+    "category": "ui",
+    "story": "E5-S4",
+    "group": "J",
+    "description": "The slot calendar can block an AVAILABLE slot and unblock a BLOCKED slot, and BOOKED slots have the block control disabled.",
+    "steps": [
+      "Click Block on an AVAILABLE slot and assert it shows BLOCKED",
+      "Click Unblock and assert AVAILABLE",
+      "Assert a BOOKED slot's block control is disabled"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-08",
+      "AC-09"
+    ]
+  },
+  {
+    "id": "F114",
+    "category": "ui",
+    "story": "E5-S4",
+    "group": "J",
+    "description": "The appointment detail shows an add-note form only when COMPLETED and lists existing notes with no edit or delete controls.",
+    "steps": [
+      "Open a BOOKED appointment and assert no note form",
+      "Open a COMPLETED appointment and assert the form",
+      "Submit a note and assert it appears in the list with no edit or delete control"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-08",
+      "AC-09"
+    ]
+  },
+  {
+    "id": "F115",
+    "category": "ui",
+    "story": "E5-S4",
+    "group": "J",
+    "description": "At 1280px the doctor screens use the full layout, and at 375px they show no horizontal scroll.",
+    "steps": [
+      "Set viewport 1280x800 and assert the queue renders without overflow",
+      "Set viewport 375x800 and assert scrollWidth <= clientWidth on queue, calendar and detail"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-08",
+      "AC-09"
+    ]
+  },
+  {
+    "id": "F116",
+    "category": "ui",
+    "story": "E5-S5",
+    "group": "H",
+    "description": "The onboarding form collects specialty, languages, fee and one or more template rows (weekday, start, end, slot length), and success shows the new doctor.",
+    "steps": [
+      "Open the onboarding screen",
+      "Fill all fields and add two template rows",
+      "Submit with the API mocked to 201",
+      "Assert the new doctor is shown"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-10",
+      "AC-01"
+    ]
+  },
+  {
+    "id": "F117",
+    "category": "ui",
+    "story": "E5-S5",
+    "group": "H",
+    "description": "Server 422 template errors are displayed next to the offending fields and the form keeps the entered values.",
+    "steps": [
+      "Mock a 422 naming the slot length field",
+      "Submit",
+      "Assert the message appears beside that field",
+      "Assert the other field values are preserved"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-10",
+      "AC-01"
+    ]
+  },
+  {
+    "id": "F118",
+    "category": "ui",
+    "story": "E5-S5",
+    "group": "H",
+    "description": "The user list supports a role filter and shows Deactivate or Reactivate per user, with Deactivate disabled on the admin's own row.",
+    "steps": [
+      "Open the user list",
+      "Filter by role Doctor and assert only doctors",
+      "Assert Reactivate on inactive rows",
+      "Assert Deactivate is disabled on the admin's own row"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-10",
+      "AC-01"
+    ]
+  },
+  {
+    "id": "F119",
+    "category": "ui",
+    "story": "E5-S5",
+    "group": "H",
+    "description": "A 409 on deactivating a doctor shows a message stating the doctor has active appointments, and the status is unchanged.",
+    "steps": [
+      "Mock 409 on deactivate",
+      "Click Deactivate",
+      "Assert the message mentions active appointments",
+      "Assert the row still shows active"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-10",
+      "AC-01"
+    ]
+  },
+  {
+    "id": "F120",
+    "category": "ui",
+    "story": "E5-S5",
+    "group": "H",
+    "description": "Edit profile on a patient row opens a form that saves and shows a success message.",
+    "steps": [
+      "Click Edit profile on a patient row",
+      "Change full_name, age, gender or phone and submit with the API mocked to 200",
+      "Assert a success message"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-10",
+      "AC-01"
+    ]
+  },
+  {
+    "id": "F121",
+    "category": "functional",
+    "story": "E6-S1",
+    "group": "G",
+    "description": "Running the seed script on an empty database creates 1 admin, at least 3 doctors with distinct specialties and at least 5 patients.",
+    "steps": [
+      "Run `uv run python -m telemed.seed` against an empty database",
+      "Count users per role",
+      "Assert 1 admin, >=3 doctors with >=3 distinct specialties and >=5 patients"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": []
+  },
+  {
+    "id": "F122",
+    "category": "functional",
+    "story": "E6-S1",
+    "group": "G",
+    "description": "Running the seed script twice creates no duplicate users or slots.",
+    "steps": [
+      "Run the seed script twice",
+      "Assert user and slot counts after the second run equal the counts after the first"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": []
+  },
+  {
+    "id": "F123",
+    "category": "security",
+    "story": "E6-S1",
+    "group": "G",
+    "description": "Every seeded email ends with '@example.test' and seeded slots exist only for the next 14 days via the slot generator.",
+    "steps": [
+      "Query all seeded emails and assert the suffix '@example.test'",
+      "Assert no slot starts after now+14 days or before now"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": []
+  },
+  {
+    "id": "F124",
+    "category": "functional",
+    "story": "E6-S2",
+    "group": "J",
+    "description": "`uv run pytest --cov` fails when overall coverage is below 80% or domain-layer coverage is below 95%.",
+    "steps": [
+      "Run `uv run pytest --cov` on the full suite and assert exit code 0",
+      "Temporarily lower coverage via a skipped test module in a scratch run and assert a non-zero exit"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "AC-02",
+      "AC-03",
+      "AC-04",
+      "AC-05",
+      "AC-06",
+      "AC-07",
+      "AC-08",
+      "AC-09",
+      "AC-10",
+      "NFR-01",
+      "NFR-02",
+      "NFR-03",
+      "NFR-04",
+      "NFR-05",
+      "NFR-06",
+      "NFR-07",
+      "NFR-08"
+    ]
+  },
+  {
+    "id": "F125",
+    "category": "functional",
+    "story": "E6-S2",
+    "group": "J",
+    "description": "A traceability check reports at least one test tagged for each of AC-01 through AC-10 and exits non-zero when any is missing.",
+    "steps": [
+      "Run the traceability script and assert it lists all ten AC ids with a test count >= 1",
+      "Remove one tag in a scratch copy and assert exit code is non-zero"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "AC-02",
+      "AC-03",
+      "AC-04",
+      "AC-05",
+      "AC-06",
+      "AC-07",
+      "AC-08",
+      "AC-09",
+      "AC-10",
+      "NFR-01",
+      "NFR-02",
+      "NFR-03",
+      "NFR-04",
+      "NFR-05",
+      "NFR-06",
+      "NFR-07",
+      "NFR-08"
+    ]
+  },
+  {
+    "id": "F126",
+    "category": "functional",
+    "story": "E6-S2",
+    "group": "J",
+    "description": "`uv run lint-imports` passes on the repository and fails when a Repository module imports a Service module.",
+    "steps": [
+      "Run uv run lint-imports and assert exit 0",
+      "Add a forbidden import in a scratch copy and assert a contract violation and non-zero exit"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "AC-02",
+      "AC-03",
+      "AC-04",
+      "AC-05",
+      "AC-06",
+      "AC-07",
+      "AC-08",
+      "AC-09",
+      "AC-10",
+      "NFR-01",
+      "NFR-02",
+      "NFR-03",
+      "NFR-04",
+      "NFR-05",
+      "NFR-06",
+      "NFR-07",
+      "NFR-08"
+    ]
+  },
+  {
+    "id": "F127",
+    "category": "functional",
+    "story": "E6-S2",
+    "group": "J",
+    "description": "`uv run mypy --strict src/` and `uv run ruff check .` report zero errors.",
+    "steps": [
+      "Run mypy --strict src/ and assert 'Success'",
+      "Run ruff check . and assert exit 0"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-01",
+      "AC-02",
+      "AC-03",
+      "AC-04",
+      "AC-05",
+      "AC-06",
+      "AC-07",
+      "AC-08",
+      "AC-09",
+      "AC-10",
+      "NFR-01",
+      "NFR-02",
+      "NFR-03",
+      "NFR-04",
+      "NFR-05",
+      "NFR-06",
+      "NFR-07",
+      "NFR-08"
+    ]
+  },
+  {
+    "id": "F128",
+    "category": "functional",
+    "story": "E6-S3",
+    "group": "K",
+    "description": "playwright.config defines a desktop project at 1280px and a mobile project at 375px, both with a fixed timezone and a fixed clock.",
+    "steps": [
+      "Open playwright.config",
+      "Assert two projects with viewport widths 1280 and 375",
+      "Assert timezoneId is set and the clock is fixed in test setup"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-02",
+      "AC-04",
+      "AC-06",
+      "AC-07",
+      "AC-08",
+      "AC-09",
+      "AC-10"
+    ]
+  },
+  {
+    "id": "F129",
+    "category": "ui",
+    "story": "E6-S3",
+    "group": "K",
+    "description": "The patient flow of search, pick slot, book, view in My appointments, then cancel or reschedule passes on both projects.",
+    "steps": [
+      "Run `npx playwright test patient`",
+      "Assert the flow passes on the desktop project",
+      "Assert it passes on the mobile project"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-02",
+      "AC-04",
+      "AC-06",
+      "AC-07",
+      "AC-08",
+      "AC-09",
+      "AC-10"
+    ]
+  },
+  {
+    "id": "F130",
+    "category": "ui",
+    "story": "E6-S3",
+    "group": "K",
+    "description": "The doctor flow of daily queue status changes, NO_SHOW disabled before start, and adding a note after COMPLETED passes on the desktop project.",
+    "steps": [
+      "Run `npx playwright test doctor`",
+      "Assert status changes succeed",
+      "Assert NO_SHOW is disabled before start",
+      "Assert a note appears after COMPLETED"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-02",
+      "AC-04",
+      "AC-06",
+      "AC-07",
+      "AC-08",
+      "AC-09",
+      "AC-10"
+    ]
+  },
+  {
+    "id": "F131",
+    "category": "ui",
+    "story": "E6-S3",
+    "group": "K",
+    "description": "The admin flow of onboarding a doctor and deactivating then reactivating a user passes on the desktop project.",
+    "steps": [
+      "Run `npx playwright test admin`",
+      "Assert the onboarded doctor appears",
+      "Assert deactivate then reactivate completes"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-02",
+      "AC-04",
+      "AC-06",
+      "AC-07",
+      "AC-08",
+      "AC-09",
+      "AC-10"
+    ]
+  },
+  {
+    "id": "F132",
+    "category": "ui",
+    "story": "E6-S3",
+    "group": "K",
+    "description": "Screenshot baselines are committed for each key screen at both viewports, and `npm test` vitest component tests pass for the 60-minute disabled state, allowed-actions buttons, 409 handling, 401 redirect, not-found page and sessionStorage token.",
+    "steps": [
+      "Run `npx playwright test --update-snapshots` once and verify baseline files exist for both viewports",
+      "Run `npm test` in frontend and assert the six listed behaviours each have a passing test"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null,
+    "criteria": [
+      "AC-02",
+      "AC-04",
+      "AC-06",
+      "AC-07",
+      "AC-08",
+      "AC-09",
+      "AC-10"
+    ]
+  },
+  {
+    "id": "F133",
+    "category": "functional",
+    "story": "E1-S1",
+    "group": "A",
+    "criteria": [
+      "NFR-05"
+    ],
+    "description": "Migrations are append-only: a test fails if any committed Alembic revision file is modified or deleted, and no migration drops or rewrites rows of the append-only tables.",
+    "steps": [
+      "List committed revision files and their recorded hashes",
+      "Modify one revision in a scratch copy and assert the check fails",
+      "Assert new schema changes exist only as new revisions"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F134",
+    "category": "functional",
+    "story": "E1-S3",
+    "group": "B",
+    "criteria": [
+      "AC-01"
+    ],
+    "description": "Registration requires full_name, age, gender and phone (contact); the initial profile is stored as patient_profile_versions version 1, and a missing field, an age that is not an integer in 1..130, or an unsupported gender returns 422 with a field-level error naming the field.",
+    "steps": [
+      "POST /api/auth/register with all four profile fields (full_name, age, gender, phone) and assert 201 and exactly one profile version with version_number 1",
+      "Omit each of full_name, age, gender and phone in turn and assert 422 with errors[].field naming the omitted field and no user row created",
+      "Send age 0, -1, 131 and 1.5 and an unsupported gender and assert 422 with errors[].field 'age' / 'gender'"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F135",
+    "category": "security",
+    "story": "E1-S5",
+    "group": "D",
+    "criteria": [
+      "AC-01",
+      "NFR-04"
+    ],
+    "description": "Only the owning patient (PUT /api/patients/me/profile) or an admin (PUT /api/admin/patients/{patient_id}/profile) can update a patient profile; a doctor or another patient is refused with 403 and no version row is added.",
+    "steps": [
+      "Update as the owning patient and assert 200 and a new version",
+      "Update as admin via the admin route and assert 200 and a new version",
+      "Update as a doctor (both routes) and as another patient (admin route) and assert 403 with the version count unchanged"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  },
+  {
+    "id": "F136",
+    "category": "functional",
+    "story": "E6-S2",
+    "group": "J",
+    "criteria": [
+      "NFR-01",
+      "NFR-02",
+      "NFR-03",
+      "NFR-04",
+      "NFR-05",
+      "NFR-06",
+      "NFR-07",
+      "NFR-08"
+    ],
+    "description": "The traceability check reports at least one test tagged for each of NFR-01 through NFR-08 and exits non-zero when any is missing.",
+    "steps": [
+      "Run the traceability check on the full suite and assert exit code 0",
+      "Remove one NFR tag in a scratch run and assert a non-zero exit naming it"
+    ],
+    "passes": false,
+    "last_evaluated": null,
+    "failure_reason": null,
+    "failure_layer": null
+  }
+]

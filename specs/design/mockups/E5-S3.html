@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>E5-S3 Patient: my appointments, notes, profile - Mockup</title>
+<!-- Mockup for E5-S3. Aligned to api-contracts.md API-22/24/25/28/06/07/11. Appointment: appointment_id, status, fee, doctor{doctor_id,full_name,specialty}, start_time, allowed_actions[], join_url, change_deadline. Note: note_id, appointment_id, author_id, text, created_at. PatientProfile (AC-01): full_name, age (integer 1..130), gender (FEMALE|MALE|OTHER|UNDISCLOSED), phone, version_number; PUT is partial, 422 shows field-level errors[]. No schema gaps. -->
+<style>
+:root{--paper:#f6f1e7;--card:#fffdf8;--ink:#14302f;--ink2:#41605d;--line:#d9cfba;--teal:#0f5c58;--teal2:#0b4643;--clay:#b4472b;--gold:#e7b53c;--ok:#1f6b3a;--okbg:#dcefe0;--warn:#7a5200;--warnbg:#fbeac2;--err:#8f2a14;--errbg:#f9ddd4;--info:#1d4e7a;--infobg:#dbe8f5}
+*{box-sizing:border-box}html,body{margin:0;overflow-x:hidden}
+body{background:var(--paper);color:var(--ink);font:16px/1.5 "Segoe UI",Candara,"Gill Sans",sans-serif}
+h1,h2,h3,.display{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-weight:700;letter-spacing:-.01em;margin:0 0 .4em}
+h1{font-size:1.9rem}h2{font-size:1.4rem}h3{font-size:1.1rem}
+.mockbar{background:#1b1b1b;color:#eee;padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font:12px/1.2 ui-monospace,Consolas,monospace;position:sticky;top:0;z-index:50}
+.mockbar b{color:var(--gold);margin-right:4px}
+.mockbar button{background:#333;color:#eee;border:1px solid #555;border-radius:4px;padding:6px 10px;min-height:32px;font:inherit;cursor:pointer}
+.mockbar button[aria-pressed=true]{background:var(--gold);color:#111;border-color:var(--gold)}
+.api{display:inline-block;font:11px/1.3 ui-monospace,Consolas,monospace;background:#efe6cf;color:#5a4300;border:1px dashed #b9a15c;border-radius:3px;padding:1px 6px;margin-left:6px;vertical-align:middle;white-space:normal;overflow-wrap:anywhere;font-weight:400}
+.wrap{max-width:1180px;margin:0 auto;padding:16px}
+.topnav{background:var(--teal);color:#fff;display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;padding:8px 16px}
+.topnav .brand{font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-right:auto}
+.topnav a,.topnav button{color:#fff;background:none;border:0;text-decoration:none;min-height:44px;min-width:44px;padding:0 8px;display:inline-flex;align-items:center;font:inherit;cursor:pointer;border-bottom:3px solid transparent}
+.topnav a[aria-current=page]{border-bottom-color:var(--gold)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:12px;box-shadow:0 1px 0 #e8dfc9}
+.grid{display:grid;gap:12px}
+@media(min-width:900px){.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.sidebar{grid-template-columns:280px 1fr}}
+label{display:block;font-weight:600;font-size:.9rem;margin:10px 0 4px}
+input,select,textarea{width:100%;min-height:44px;padding:8px 10px;border:1.5px solid #8b9a96;border-radius:6px;background:#fff;color:var(--ink);font:inherit}
+input:focus,select:focus,textarea:focus,button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:1px}
+input[aria-invalid=true]{border-color:var(--clay);background:#fff6f3}
+.btn{min-height:44px;min-width:44px;padding:8px 16px;border-radius:6px;border:1.5px solid var(--teal);background:var(--teal);color:#fff;font-weight:600;font-size:1rem;font-family:inherit;cursor:pointer}
+.btn:hover:not(:disabled){background:var(--teal2)}
+.btn.sec{background:transparent;color:var(--teal)}
+.btn.danger{background:var(--clay);border-color:var(--clay)}
+.btn.danger.sec{background:transparent;color:var(--clay)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.block{width:100%}
+.hint{font-size:.85rem;color:var(--ink2)}
+.err{color:var(--err);font-size:.85rem;margin-top:3px}
+.msg{padding:10px 12px;border-radius:6px;margin:10px 0;font-size:.92rem;border-left:5px solid}
+.msg.err{background:var(--errbg);border-color:var(--clay);color:var(--err);font-size:.92rem}
+.msg.ok{background:var(--okbg);border-color:var(--ok);color:var(--ok)}
+.msg.warn{background:var(--warnbg);border-color:var(--gold);color:var(--warn)}
+.msg.info{background:var(--infobg);border-color:var(--info);color:var(--info)}
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.78rem;font-weight:700;letter-spacing:.04em;border:1px solid}
+.b-BOOKED{background:var(--infobg);color:var(--info);border-color:var(--info)}
+.b-CHECKED_IN{background:var(--warnbg);color:var(--warn);border-color:var(--warn)}
+.b-IN_PROGRESS{background:#e8dcf5;color:#4b2a7a;border-color:#4b2a7a}
+.b-COMPLETED{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
+.b-CANCELLED{background:#e7e2d6;color:#55503f;border-color:#55503f}
+.b-NO_SHOW{background:var(--errbg);color:var(--err);border-color:var(--err)}
+.b-AVAILABLE{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
+.b-BLOCKED{background:#e7e2d6;color:#55503f;border-color:#55503f}
+.b-ACTIVE{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
+.b-INACTIVE{background:var(--errbg);color:var(--err);border-color:var(--err)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.sp{justify-content:space-between}
+.state{display:none}.state.on{display:block}
+.skel{background:linear-gradient(90deg,#eadfc6,#f6efdd,#eadfc6);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:6px;height:18px;margin:8px 0}
+@keyframes sh{to{background-position:-200% 0}}
+.empty{text-align:center;padding:32px 12px;color:var(--ink2);border:2px dashed var(--line);border-radius:10px}
+.fee{font-family:Georgia,serif;font-weight:700;font-size:1.1rem}
+.sr{position:absolute;left:-9999px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2)}
+.chip{min-height:44px;min-width:44px;padding:6px 12px;border:1.5px solid var(--teal);border-radius:8px;background:#fff;color:var(--teal);font-weight:600;font-size:.95rem;font-family:inherit;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--teal);color:#fff}.chip:disabled{opacity:.45;cursor:not-allowed;background:#eee;border-color:#aaa;color:#555}
+.modal-bg{position:fixed;inset:0;background:rgba(20,48,47,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:100}
+.modal-bg.on{display:flex}.modal{background:var(--card);border-radius:10px;padding:20px;max-width:440px;width:100%}
+@media(max-width:700px){.resp thead{display:none}.resp tr{display:block;border:1px solid var(--line);border-radius:8px;margin-bottom:10px;padding:6px;background:var(--card)}.resp td{display:block;border:0;padding:4px 8px}.resp td::before{content:attr(data-l);font-weight:700;font-size:.75rem;text-transform:uppercase;color:var(--ink2);display:block}}
+
+.appt{display:grid;gap:8px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+</style></head>
+<body>
+<div class="mockbar" role="toolbar" aria-label="Mockup controls">
+<b>LIST</b><button data-l="data" aria-pressed="true">Data</button><button data-l="loading" aria-pressed="false">Loading</button><button data-l="empty" aria-pressed="false">Empty</button><button data-l="error" aria-pressed="false">Error</button>
+<b style="margin-left:12px">SERVER ON CANCEL / RESCHEDULE</b><button data-r="ok" aria-pressed="true">200</button><button data-r="409" aria-pressed="false">409</button>
+</div>
+<header class="topnav"><span class="brand">Telemed</span><nav aria-label="Patient"><a href="#">Find a doctor</a><a href="#" id="tA" aria-current="page">My appointments</a><a href="#" id="tP">Profile</a></nav></header>
+<main class="wrap">
+<div id="live" role="alert" aria-live="polite" class="sr"></div>
+<section id="vA"><h1>My appointments <span class="api">GET /api/appointments/mine</span></h1><div id="inline"></div><div id="list"></div></section>
+
+<section id="vN" hidden><p><button class="btn sec" id="nb">&larr; Back</button></p><h1>Consultation notes <span class="api">GET /api/appointments/{appointment_id}/notes</span></h1><p class="hint">Read only. Notes cannot be edited or deleted.</p><div id="notes"></div></section>
+
+<section id="vP" hidden aria-labelledby="hp"><h1 id="hp">My profile <span class="api">GET /api/patients/me/profile</span></h1>
+<form class="card" id="pf" style="max-width:520px">
+<label for="pn">Full name <span class="hint">full_name</span></label><input id="pn" name="full_name" autocomplete="name" maxlength="200" required aria-describedby="pne"><div id="pne" class="err" hidden></div>
+<div class="grid g2"><div><label for="pa">Age <span class="hint">age, 1 to 130</span></label><input id="pa" name="age" type="number" inputmode="numeric" min="1" max="130" step="1" required aria-describedby="pae"><div id="pae" class="err" hidden></div></div>
+<div><label for="pg">Gender <span class="hint">gender</span></label><select id="pg" name="gender" required aria-describedby="pge"><option value="">Select...</option><option value="FEMALE">Female</option><option value="MALE">Male</option><option value="OTHER">Other</option><option value="UNDISCLOSED">Prefer not to say</option></select><div id="pge" class="err" hidden></div></div></div>
+<label for="pph">Phone (contact) <span class="hint">phone</span></label><input id="pph" name="phone" type="tel" autocomplete="tel" maxlength="32" required aria-describedby="pphe"><div id="pphe" class="err" hidden></div>
+<p class="hint">Only you (the patient) and an admin can edit this profile. Each save creates a new version.</p>
+<p><button class="btn" type="submit">Save changes <span class="api">PUT /api/patients/me/profile</span></button></p>
+<div id="pmsg"></div></form></section>
+
+<div class="modal-bg" id="m"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt"><h2 id="mt"></h2><div id="mb"></div><div id="mm"></div><div class="row" style="margin-top:12px" id="mf"></div></div></div>
+</main>
+<script>
+function $(s,r){return (r||document).querySelector(s)}function $$(s,r){return [...(r||document).querySelectorAll(s)]}
+function live(msg){var l=$('#live');l.textContent='';setTimeout(function(){l.textContent=msg},30)}
+function bindBar(group,cb){$$('.mockbar [data-'+group+']').forEach(function(b){b.addEventListener('click',function(){$$('.mockbar [data-'+group+']').forEach(function(x){x.setAttribute('aria-pressed','false')});b.setAttribute('aria-pressed','true');cb(b.dataset[group])})})}
+function show(prefix,id){$$('.state[id^="'+prefix+'"]').forEach(function(e){e.classList.toggle('on',e.id===prefix+id)})}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function fmtLocal(iso){var d=new Date(iso);var t=d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:false});var z=(d.toLocaleTimeString([], {timeZoneName:'short'}).split(' ').pop());return t+' '+z}
+function fmtDay(iso){return new Date(iso).toLocaleDateString([], {weekday:'short',day:'numeric',month:'short'})}
+
+function at(min){return new Date(Date.now()+min*60000).toISOString()}
+function ap(id,status,fee,docId,name,spec,min,url){return {appointment_id:id,status:status,fee:fee,doctor:{doctor_id:docId,full_name:name,specialty:spec},start_time:at(min),join_url:url,allowed_actions:[]}}
+var A=[
+ap(5021,'BOOKED','800.00',11,'Dr. Anjali Menon','Cardiology',60*26,'https://video.example.test/visit/5021'),
+ap(5018,'BOOKED','500.00',12,'Dr. Rohan Iyer','Dermatology',35,'https://video.example.test/visit/5018'),
+ap(5009,'COMPLETED','450.00',13,'Dr. Sunita Verma','Pediatrics',-60*50,null),
+ap(5004,'CANCELLED','800.00',11,'Dr. Anjali Menon','Cardiology',-60*120,null)];
+var NOTES=[{note_id:1,appointment_id:5009,author_id:13,text:'Mild seasonal allergy. Advised antihistamine at night for 5 days; review if symptoms persist.',created_at:at(-60*49)},{note_id:2,appointment_id:5009,author_id:13,text:'Follow-up: symptoms resolved. No further treatment needed.',created_at:at(-60*30)}];
+var SLOTS=[at(60*50),at(60*52),at(60*75),at(60*98)];
+var lm='data',rm='ok';
+/* Simulates the SERVER: in production allowed_actions arrives in the API-22 response; the UI only renders it. */
+function serverAllowed(a){var inWin=(new Date(a.start_time)-Date.now())<60*60000;return a.status==='BOOKED'&&!inWin?['CANCEL','RESCHEDULE']:[]}
+function sync(){A.forEach(function(a){a.allowed_actions=serverAllowed(a);a.change_deadline=new Date(new Date(a.start_time)-3600000).toISOString()})}
+function allowed(a){return a.allowed_actions}
+function actions(a){
+ var h='';
+ if(['BOOKED','CHECKED_IN','IN_PROGRESS'].indexOf(a.status)>-1){
+  h+='<a class="btn" style="text-decoration:none;display:inline-flex;align-items:center" href="'+a.join_url+'">Join video visit</a>';
+  var ok=a.allowed_actions.indexOf('CANCEL')>-1;
+  h+='<button class="btn sec" data-c="'+a.appointment_id+'"'+(ok?'':' disabled')+'>Cancel <span class="api">POST /api/appointments/'+a.appointment_id+'/cancel</span></button>';
+  h+='<button class="btn sec" data-r="'+a.appointment_id+'"'+(ok?'':' disabled')+'>Reschedule <span class="api">POST /api/appointments/'+a.appointment_id+'/reschedule {new_slot_id}</span></button>';
+ }
+ if(a.status==='COMPLETED')h+='<button class="btn sec" data-n="'+a.appointment_id+'">View notes <span class="api">GET /api/appointments/'+a.appointment_id+'/notes</span></button>';
+ return h}
+function draw(){
+ var b=$('#list');
+ if(lm==='loading'){b.innerHTML='<div class="card"><div class="skel"></div><div class="skel" style="width:60%"></div></div>';return}
+ if(lm==='error'){b.innerHTML='<div class="msg err" role="alert">Could not load your appointments. <button class="btn sec" onclick="setL(\'data\')">Retry</button></div>';return}
+ if(lm==='empty'){b.innerHTML='<div class="empty"><h3>No appointments yet</h3><p>Find a doctor to book your first visit.</p></div>';return}
+ b.innerHTML=A.slice().sort(function(x,y){return new Date(x.start_time)-new Date(y.start_time)}).map(function(a){
+  var inWin=a.status==='BOOKED'&&allowed(a).length===0;
+  return '<article class="card appt" id="a'+a.appointment_id+'"><div class="row sp"><h2 style="margin:0;font-size:1.15rem">'+a.doctor.full_name+'</h2><span class="badge b-'+a.status+'">'+a.status.replace('_',' ')+'</span></div><div>'+fmtDay(a.start_time)+', <strong>'+fmtLocal(a.start_time)+'</strong> &middot; <span class="fee">'+a.fee+'</span></div>'+
+  (inWin?'<div class="msg warn" id="why'+a.appointment_id+'">Cancel and reschedule closed at '+fmtLocal(a.change_deadline)+' (60 minutes before start).</div>':'')+
+  '<div class="row">'+actions(a)+'</div></article>'}).join('');
+ $$('#list [data-c]').forEach(function(x){x.onclick=function(){cancel(+x.dataset.c)}});
+ $$('#list [data-r]').forEach(function(x){x.onclick=function(){resched(+x.dataset.r)}});
+ $$('#list [data-n]').forEach(function(x){x.onclick=function(){notes()}});
+}
+function setL(v){lm=v;$$('.mockbar [data-l]').forEach(function(x){x.setAttribute('aria-pressed',x.dataset.l===v)});draw()}
+function find(id){return A.filter(function(a){return a.appointment_id===id})[0]}
+function modal(t,body,foot){$('#mt').textContent=t;$('#mb').innerHTML=body;$('#mm').innerHTML='';$('#mf').innerHTML=foot;$('#m').classList.add('on')}
+function close_(){$('#m').classList.remove('on')}
+function cancel(id){var a=find(id);
+ modal('Cancel this appointment?','<p>'+a.doctor.full_name+', '+fmtDay(a.start_time)+' '+fmtLocal(a.start_time)+'. Your fee will be refunded.</p>','<button class="btn danger" id="yes">Yes, cancel <span class="api">POST /api/appointments/{appointment_id}/cancel</span></button><button class="btn sec" id="no">Keep appointment</button>');
+ $('#no').onclick=close_;
+ $('#yes').onclick=function(){if(rm==='409'){$('#mm').innerHTML='<div class="msg err" role="alert">The 60-minute change window has closed. (409 CHANGE_WINDOW_CLOSED)</div>';live('This appointment can no longer be cancelled.');return}
+  a.status='CANCELLED';a.join_url=null;sync();close_();draw();live('Appointment cancelled.')}}
+function resched(id){var a=find(id),pick=null;
+ modal('Reschedule with '+a.doctor.full_name,'<p class="hint">Open slots for the same doctor <span class="api">GET /api/doctors/'+a.doctor.doctor_id+'/slots</span></p><div class="row" id="ss">'+SLOTS.map(function(s,i){return '<button class="chip" data-i="'+i+'" aria-pressed="false">'+fmtDay(s)+' '+fmtLocal(s)+'</button>'}).join('')+'</div>','<button class="btn" id="go" disabled>Confirm new time</button><button class="btn sec" id="no">Close</button>');
+ $('#no').onclick=close_;
+ $$('#ss .chip').forEach(function(c){c.onclick=function(){pick=+c.dataset.i;$$('#ss .chip').forEach(function(x){x.setAttribute('aria-pressed',x===c)});$('#go').disabled=false}});
+ $('#go').onclick=function(){if(rm==='409'){SLOTS.splice(pick,1);$('#mm').innerHTML='<div class="msg err" role="alert">That slot is no longer available. Pick another. (409 SLOT_UNAVAILABLE)</div>';live('That slot is no longer available.');$('#ss').innerHTML=SLOTS.map(function(s,i){return '<button class="chip" data-i="'+i+'" aria-pressed="false">'+fmtDay(s)+' '+fmtLocal(s)+'</button>'}).join('');return}
+  a.start_time=SLOTS[pick];sync();close_();draw();live('Appointment rescheduled to '+fmtLocal(a.start_time))}}
+function notes(){$('#vA').hidden=true;$('#vN').hidden=false;$('#notes').innerHTML=NOTES.length?NOTES.map(function(n){return '<article class="card"><div class="hint">'+fmtDay(n.created_at)+' '+fmtLocal(n.created_at)+'</div><p style="margin:4px 0 0">'+esc(n.text)+'</p></article>'}).join(''):'<div class="empty">No notes yet.</div>'}
+$('#nb').onclick=function(){$('#vN').hidden=true;$('#vA').hidden=false};
+function tab(p){$('#vA').hidden=p!=='A';$('#vP').hidden=p!=='P';$('#vN').hidden=true;$('#tA').setAttribute('aria-current',p==='A'?'page':'false');$('#tP').setAttribute('aria-current',p==='P'?'page':'false')}
+$('#tA').onclick=function(e){e.preventDefault();tab('A')};$('#tP').onclick=function(e){e.preventDefault();tab('P');loadP()};
+var PF={full_name:['#pn','#pne'],age:['#pa','#pae'],gender:['#pg','#pge'],phone:['#pph','#pphe']};
+function validateP(){var e=[],n=$('#pn').value.trim(),a=$('#pa').value.trim(),g=$('#pg').value,p=$('#pph').value.trim(),ai=Number(a);
+ if(!n||n.length>200)e.push({field:'full_name',message:'Full name is required (1 to 200 characters).'});
+ if(a===''||!/^[0-9]+$/.test(a)||ai<1||ai>130)e.push({field:'age',message:'Age must be a whole number from 1 to 130.'});
+ if(['FEMALE','MALE','OTHER','UNDISCLOSED'].indexOf(g)<0)e.push({field:'gender',message:'Select a gender.'});
+ if(!p||p.length>32)e.push({field:'phone',message:'Phone number is required (up to 32 characters).'});
+ return e}
+function clearP(){Object.keys(PF).forEach(function(k){$(PF[k][0]).removeAttribute('aria-invalid');var m=$(PF[k][1]);m.hidden=true;m.textContent=''});$('#pmsg').innerHTML=''}
+function showP(errs){clearP();errs.forEach(function(x){var f=PF[x.field];$(f[0]).setAttribute('aria-invalid','true');var m=$(f[1]);m.hidden=false;m.textContent=x.message+' (422 VALIDATION_ERROR, errors[].field = '+x.field+')'});$(PF[errs[0].field][0]).focus();live(errs.length+' field(s) need attention: '+errs.map(function(x){return x.field}).join(', '))}
+function readP(){return {full_name:$('#pn').value.trim(),age:Number($('#pa').value),gender:$('#pg').value,phone:$('#pph').value.trim()}}
+var DEF={full_name:'Meera Nair',age:34,gender:'FEMALE',phone:'+91 98450 12345',version_number:3};
+function loadP(){var s=JSON.parse(sessionStorage.getItem('mockProfile')||'null')||DEF;$('#pn').value=s.full_name;$('#pa').value=s.age;$('#pg').value=s.gender;$('#pph').value=s.phone;clearP()}
+$('#pf').onsubmit=function(e){e.preventDefault();var er=validateP();if(er.length){showP(er);return}clearP();var v=readP();v.version_number=4;sessionStorage.setItem('mockProfile',JSON.stringify(v));$('#pmsg').innerHTML='<div class="msg ok">Profile saved as version 4 (200). Reload this page: your values persist.</div>';live('Profile saved.')};
+bindBar('l',setL);bindBar('r',function(v){rm=v});
+sync();draw();
+</script></body></html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>E5-S4 Doctor: queue, slot calendar, notes - Mockup</title>
+<!-- Mockup for E5-S4 (1280px-first). Aligned to api-contracts.md API-02/15/12/13/14/26/24/27/28. Appointment: appointment_id, status, start_time, patient.full_name, allowed_actions[] (CHECKED_IN, IN_PROGRESS, COMPLETED, NO_SHOW, CANCEL), Slot: slot_id, start_time, end_time, status. Note: note_id, text, created_at. provider_timezone from GET /api/config. No schema gaps. -->
+<style>
+:root{--paper:#f6f1e7;--card:#fffdf8;--ink:#14302f;--ink2:#41605d;--line:#d9cfba;--teal:#0f5c58;--teal2:#0b4643;--clay:#b4472b;--gold:#e7b53c;--ok:#1f6b3a;--okbg:#dcefe0;--warn:#7a5200;--warnbg:#fbeac2;--err:#8f2a14;--errbg:#f9ddd4;--info:#1d4e7a;--infobg:#dbe8f5}
+*{box-sizing:border-box}html,body{margin:0;overflow-x:hidden}
+body{background:var(--paper);color:var(--ink);font:16px/1.5 "Segoe UI",Candara,"Gill Sans",sans-serif}
+h1,h2,h3,.display{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-weight:700;letter-spacing:-.01em;margin:0 0 .4em}
+h1{font-size:1.9rem}h2{font-size:1.4rem}h3{font-size:1.1rem}
+.mockbar{background:#1b1b1b;color:#eee;padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font:12px/1.2 ui-monospace,Consolas,monospace;position:sticky;top:0;z-index:50}
+.mockbar b{color:var(--gold);margin-right:4px}
+.mockbar button{background:#333;color:#eee;border:1px solid #555;border-radius:4px;padding:6px 10px;min-height:32px;font:inherit;cursor:pointer}
+.mockbar button[aria-pressed=true]{background:var(--gold);color:#111;border-color:var(--gold)}
+.api{display:inline-block;font:11px/1.3 ui-monospace,Consolas,monospace;background:#efe6cf;color:#5a4300;border:1px dashed #b9a15c;border-radius:3px;padding:1px 6px;margin-left:6px;vertical-align:middle;white-space:normal;overflow-wrap:anywhere;font-weight:400}
+.wrap{max-width:1180px;margin:0 auto;padding:16px}
+.topnav{background:var(--teal);color:#fff;display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;padding:8px 16px}
+.topnav .brand{font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-right:auto}
+.topnav a,.topnav button{color:#fff;background:none;border:0;text-decoration:none;min-height:44px;min-width:44px;padding:0 8px;display:inline-flex;align-items:center;font:inherit;cursor:pointer;border-bottom:3px solid transparent}
+.topnav a[aria-current=page]{border-bottom-color:var(--gold)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:12px;box-shadow:0 1px 0 #e8dfc9}
+.grid{display:grid;gap:12px}
+@media(min-width:900px){.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.sidebar{grid-template-columns:280px 1fr}}
+label{display:block;font-weight:600;font-size:.9rem;margin:10px 0 4px}
+input,select,textarea{width:100%;min-height:44px;padding:8px 10px;border:1.5px solid #8b9a96;border-radius:6px;background:#fff;color:var(--ink);font:inherit}
+input:focus,select:focus,textarea:focus,button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:1px}
+input[aria-invalid=true]{border-color:var(--clay);background:#fff6f3}
+.btn{min-height:44px;min-width:44px;padding:8px 16px;border-radius:6px;border:1.5px solid var(--teal);background:var(--teal);color:#fff;font-weight:600;font-size:1rem;font-family:inherit;cursor:pointer}
+.btn:hover:not(:disabled){background:var(--teal2)}
+.btn.sec{background:transparent;color:var(--teal)}
+.btn.danger{background:var(--clay);border-color:var(--clay)}
+.btn.danger.sec{background:transparent;color:var(--clay)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.block{width:100%}
+.hint{font-size:.85rem;color:var(--ink2)}
+.err{color:var(--err);font-size:.85rem;margin-top:3px}
+.msg{padding:10px 12px;border-radius:6px;margin:10px 0;font-size:.92rem;border-left:5px solid}
+.msg.err{background:var(--errbg);border-color:var(--clay);color:var(--err);font-size:.92rem}
+.msg.ok{background:var(--okbg);border-color:var(--ok);color:var(--ok)}
+.msg.warn{background:var(--warnbg);border-color:var(--gold);color:var(--warn)}
+.msg.info{background:var(--infobg);border-color:var(--info);color:var(--info)}
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.78rem;font-weight:700;letter-spacing:.04em;border:1px solid}
+.b-BOOKED{background:var(--infobg);color:var(--info);border-color:var(--info)}
+.b-CHECKED_IN{background:var(--warnbg);color:var(--warn);border-color:var(--warn)}
+.b-IN_PROGRESS{background:#e8dcf5;color:#4b2a7a;border-color:#4b2a7a}
+.b-COMPLETED{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
+.b-CANCELLED{background:#e7e2d6;color:#55503f;border-color:#55503f}
+.b-NO_SHOW{background:var(--errbg);color:var(--err);border-color:var(--err)}
+.b-AVAILABLE{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
+.b-BLOCKED{background:#e7e2d6;color:#55503f;border-color:#55503f}
+.b-ACTIVE{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
+.b-INACTIVE{background:var(--errbg);color:var(--err);border-color:var(--err)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.sp{justify-content:space-between}
+.state{display:none}.state.on{display:block}
+.skel{background:linear-gradient(90deg,#eadfc6,#f6efdd,#eadfc6);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:6px;height:18px;margin:8px 0}
+@keyframes sh{to{background-position:-200% 0}}
+.empty{text-align:center;padding:32px 12px;color:var(--ink2);border:2px dashed var(--line);border-radius:10px}
+.fee{font-family:Georgia,serif;font-weight:700;font-size:1.1rem}
+.sr{position:absolute;left:-9999px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2)}
+.chip{min-height:44px;min-width:44px;padding:6px 12px;border:1.5px solid var(--teal);border-radius:8px;background:#fff;color:var(--teal);font-weight:600;font-size:.95rem;font-family:inherit;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--teal);color:#fff}.chip:disabled{opacity:.45;cursor:not-allowed;background:#eee;border-color:#aaa;color:#555}
+.modal-bg{position:fixed;inset:0;background:rgba(20,48,47,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:100}
+.modal-bg.on{display:flex}.modal{background:var(--card);border-radius:10px;padding:20px;max-width:440px;width:100%}
+@media(max-width:700px){.resp thead{display:none}.resp tr{display:block;border:1px solid var(--line);border-radius:8px;margin-bottom:10px;padding:6px;background:var(--card)}.resp td{display:block;border:0;padding:4px 8px}.resp td::before{content:attr(data-l);font-weight:700;font-size:.75rem;text-transform:uppercase;color:var(--ink2);display:block}}
+
+.qrow{display:grid;gap:8px;align-items:center}
+@media(min-width:900px){.qrow{grid-template-columns:130px 1fr 130px auto}}
+.cal{display:grid;gap:12px}
+@media(min-width:900px){.cal{grid-template-columns:repeat(3,1fr)}}
+.srow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+</style></head>
+<body>
+<div class="mockbar" role="toolbar" aria-label="Mockup controls">
+<b>CLOCK</b><button data-k="before" aria-pressed="true">08:45 IST (before starts)</button><button data-k="after" aria-pressed="false">10:15 IST (first two started)</button>
+<b style="margin-left:12px">LIST</b><button data-l="data" aria-pressed="true">Data</button><button data-l="loading" aria-pressed="false">Loading</button><button data-l="empty" aria-pressed="false">Empty</button><button data-l="error" aria-pressed="false">Error</button>
+<b style="margin-left:12px">SERVER</b><button data-s="ok" aria-pressed="true">200</button><button data-s="409" aria-pressed="false">409</button>
+</div>
+<header class="topnav"><span class="brand">Telemed &middot; Doctor</span><nav aria-label="Doctor"><a href="#" id="tQ" aria-current="page">Daily queue</a><a href="#" id="tC">Slot calendar</a></nav></header>
+<main class="wrap">
+<div id="live" role="alert" aria-live="polite" class="sr"></div>
+
+<section id="vQ"><div class="row sp"><h1>Daily queue <span class="api">GET /api/doctors/me/queue?date=YYYY-MM-DD</span> <span class="api">GET /api/config</span></h1>
+<div><label for="qd">Date</label><input id="qd" type="date" style="width:auto"></div></div>
+<p class="hint">Times shown in provider timezone: <strong>Asia/Kolkata (IST)</strong>. Buttons come only from <code>allowed_actions</code>.</p>
+<div id="inline"></div><div id="queue"></div></section>
+
+<section id="vC" hidden><h1>Slot calendar <span class="api">GET /api/doctors/me/slots?from=&amp;to=</span></h1><p class="hint">Times in IST.</p><div id="inlineC"></div><div id="cal" class="cal"></div></section>
+
+<section id="vD" hidden><p><button class="btn sec" id="db">&larr; Back to queue</button></p>
+<div class="card"><div class="row sp"><h1 style="margin:0" id="dh"></h1><span id="ds"></span></div><p id="dm" class="hint"></p></div>
+<h2>Consultation notes <span class="api">GET /api/appointments/{appointment_id}/notes</span></h2><div id="notes"></div>
+<form id="nf" class="card" hidden><label for="nt">Add note (max 5000 characters)</label><textarea id="nt" rows="4" maxlength="5000"></textarea><div class="hint"><span id="cnt">0</span>/5000</div>
+<p><button class="btn" type="submit">Append note <span class="api">POST /api/appointments/{appointment_id}/notes {text}</span></button></p></form>
+<div id="nmsg"></div><p id="nnote" class="msg info" hidden>Notes can be added only after the appointment is COMPLETED.</p></section>
+</main>
+<script>
+function $(s,r){return (r||document).querySelector(s)}function $$(s,r){return [...(r||document).querySelectorAll(s)]}
+function live(msg){var l=$('#live');l.textContent='';setTimeout(function(){l.textContent=msg},30)}
+function bindBar(group,cb){$$('.mockbar [data-'+group+']').forEach(function(b){b.addEventListener('click',function(){$$('.mockbar [data-'+group+']').forEach(function(x){x.setAttribute('aria-pressed','false')});b.setAttribute('aria-pressed','true');cb(b.dataset[group])})})}
+function show(prefix,id){$$('.state[id^="'+prefix+'"]').forEach(function(e){e.classList.toggle('on',e.id===prefix+id)})}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function fmtLocal(iso){var d=new Date(iso);var t=d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:false});var z=(d.toLocaleTimeString([], {timeZoneName:'short'}).split(' ').pop());return t+' '+z}
+function fmtDay(iso){return new Date(iso).toLocaleDateString([], {weekday:'short',day:'numeric',month:'short'})}
+
+var TZ='Asia/Kolkata'; /* from GET /api/config -> provider_timezone */
+function ist(h,m){var d=new Date();var p=d.toLocaleDateString('en-CA',{timeZone:TZ}).split('-');return new Date(Date.UTC(+p[0],+p[1]-1,+p[2],h,m)-330*60000).toISOString()}
+function plus(iso,m){return new Date(new Date(iso).getTime()+m*60000).toISOString()}
+function t(iso){return new Date(iso).toLocaleTimeString('en-GB',{timeZone:TZ,hour:'2-digit',minute:'2-digit'})+' IST'}
+var clock='before',lm='data',sm='ok';
+function now(){return new Date(clock==='before'?ist(8,45):ist(10,15))}
+function A(id,name,status,h,m){var s=ist(h,m);return {appointment_id:id,status:status,slot_id:300+id,start_time:s,end_time:plus(s,30),patient:{patient_id:id,full_name:name},fee:'800.00',allowed_actions:[]}}
+var Q=[A(5030,'Meera Nair','BOOKED',9,0),A(5031,'Arjun Rao','CHECKED_IN',9,30),A(5032,'Kavya Pillai','BOOKED',11,30),A(5033,'Imran Shaikh','COMPLETED',8,0)];
+var NOTES={5033:[{note_id:1,appointment_id:5033,author_id:7,text:'Blood pressure 128/82. Continue current medication; recheck in 4 weeks.',created_at:ist(8,40)}]};
+/* Simulates the SERVER (API-15 computes allowed_actions for DOCTOR). The UI only renders the array. */
+function server(a){var past=now()>=new Date(a.start_time),r=[];
+ if(a.status==='BOOKED'){r=['CHECKED_IN','CANCEL'];if(past)r.push('NO_SHOW')}
+ if(a.status==='CHECKED_IN'){r=['IN_PROGRESS'];if(past)r.push('NO_SHOW')}
+ if(a.status==='IN_PROGRESS')r=['COMPLETED'];return r}
+function sync(){Q.forEach(function(a){a.allowed_actions=server(a)})}
+var LBL={CHECKED_IN:'Check in',IN_PROGRESS:'Start consult',COMPLETED:'Mark completed',NO_SHOW:'Mark NO_SHOW',CANCEL:'Cancel appointment'};
+function drawQ(){
+ sync();
+ var b=$('#queue');
+ if(lm==='loading'){b.innerHTML='<div class="card"><div class="skel"></div><div class="skel"></div></div>';return}
+ if(lm==='error'){b.innerHTML='<div class="msg err" role="alert">Could not load the queue. <button class="btn sec" onclick="setL(\'data\')">Retry</button></div>';return}
+ var today=new Date().toLocaleDateString('en-CA',{timeZone:TZ});
+ if(lm==='empty'||$('#qd').value!==today){b.innerHTML='<div class="empty"><h3>No appointments on this date</h3></div>';return}
+ b.innerHTML=Q.slice().sort(function(x,y){return new Date(x.start_time)-new Date(y.start_time)}).map(function(a){
+  var al=a.allowed_actions,h='';
+  al.forEach(function(k){var ep=k==='CANCEL'?'POST /api/appointments/'+a.appointment_id+'/cancel':'POST /api/appointments/'+a.appointment_id+'/status {status:'+k+'}';
+   h+='<button class="btn'+(k==='NO_SHOW'||k==='CANCEL'?' danger sec':'')+'" data-a="'+a.appointment_id+'" data-k="'+k+'">'+LBL[k]+' <span class="api">'+ep+'</span></button>'});
+  var early=['BOOKED','CHECKED_IN'].indexOf(a.status)>-1&&al.indexOf('NO_SHOW')<0;
+  if(early)h+='<button class="btn danger sec" disabled aria-describedby="ns'+a.appointment_id+'">Mark NO_SHOW</button><span class="hint" id="ns'+a.appointment_id+'">Available after the start time ('+t(a.start_time)+')</span>';
+  return '<article class="card qrow" id="q'+a.appointment_id+'"><strong class="display" style="font-size:1.2rem">'+t(a.start_time)+'</strong><div><a href="#" data-d="'+a.appointment_id+'">'+esc(a.patient.full_name)+'</a><div class="hint">Appointment #'+a.appointment_id+'</div></div><span class="badge b-'+a.status+'" style="justify-self:start">'+a.status.replace('_',' ')+'</span><div class="row">'+(h||'<span class="hint">No actions</span>')+'</div></article>'}).join('');
+ $$('#queue [data-k]').forEach(function(x){x.onclick=function(){act(+x.dataset.a,x.dataset.k)}});
+ $$('#queue [data-d]').forEach(function(x){x.onclick=function(e){e.preventDefault();detail(+x.dataset.d)}});
+}
+function act(id,k){var a=Q.filter(function(x){return x.appointment_id===id})[0];
+ if(sm==='409'){$('#inline').innerHTML='<div class="msg err" role="alert">That action is no longer valid for this appointment (409 INVALID_APPOINTMENT_STATE). The queue has been refreshed.</div>';live('That action is no longer valid. Queue refreshed.');drawQ();return}
+ $('#inline').innerHTML='';a.status=k==='CANCEL'?'CANCELLED':k;drawQ();live('Appointment '+id+' is now '+a.status)}
+function setL(v){lm=v;$$('.mockbar [data-l]').forEach(function(x){x.setAttribute('aria-pressed',x.dataset.l===v)});drawQ()}
+bindBar('k',function(v){clock=v;drawQ()});bindBar('l',setL);bindBar('s',function(v){sm=v});
+$('#qd').value=new Date().toLocaleDateString('en-CA',{timeZone:TZ});$('#qd').onchange=drawQ;
+
+/* calendar: API-12 Slot {slot_id, doctor_id, start_time, end_time, status} */
+var S=[];(function(){var i=1;for(var d=0;d<3;d++){[[9,0],[9,30],[10,0],[10,30]].forEach(function(h){var dt=new Date();dt.setDate(dt.getDate()+d);var p=dt.toLocaleDateString('en-CA',{timeZone:TZ}).split('-');
+ var st=new Date(Date.UTC(+p[0],+p[1]-1,+p[2],h[0],h[1])-330*60000).toISOString();
+ S.push({slot_id:i++,doctor_id:7,start_time:st,end_time:plus(st,30),status:'AVAILABLE'})})}S[1].status='BOOKED';S[5].status='BLOCKED';S[9].status='BOOKED'})();
+function drawC(){var by={};S.forEach(function(s){var k=new Date(s.start_time).toLocaleDateString('en-GB',{timeZone:TZ,weekday:'short',day:'numeric',month:'short'});(by[k]=by[k]||[]).push(s)});
+ $('#cal').innerHTML=Object.keys(by).map(function(k){return '<div class="card"><h2>'+k+'</h2>'+by[k].map(function(s){
+  var btn=s.status==='AVAILABLE'?'<button class="btn sec" data-b="'+s.slot_id+'">Block <span class="api">PUT /api/doctors/me/slots/'+s.slot_id+'/block</span></button>':s.status==='BLOCKED'?'<button class="btn sec" data-u="'+s.slot_id+'">Unblock <span class="api">PUT /api/doctors/me/slots/'+s.slot_id+'/unblock</span></button>':'<button class="btn sec" disabled aria-describedby="r'+s.slot_id+'">Block</button><span class="hint" id="r'+s.slot_id+'">Booked slots cannot be blocked</span>';
+  return '<div class="srow"><span><strong>'+t(s.start_time)+'</strong> <span class="badge b-'+s.status+'">'+s.status+'</span></span><span class="row">'+btn+'</span></div>'}).join('')+'</div>'}).join('');
+ $$('#cal [data-b]').forEach(function(x){x.onclick=function(){flip(+x.dataset.b,'BLOCKED')}});$$('#cal [data-u]').forEach(function(x){x.onclick=function(){flip(+x.dataset.u,'AVAILABLE')}})}
+function flip(id,to){var s=S.filter(function(x){return x.slot_id===id})[0];
+ if(sm==='409'){s.status=to==='BLOCKED'?'BOOKED':s.status;$('#inlineC').innerHTML='<div class="msg err" role="alert">Slot state changed (409 INVALID_SLOT_STATE). Calendar refreshed.</div>';live('Slot state changed. Calendar refreshed.');drawC();return}
+ $('#inlineC').innerHTML='';s.status=to;drawC();live('Slot '+to)}
+
+/* detail */
+var cur=null;
+function detail(id){cur=Q.filter(function(x){return x.appointment_id===id})[0];$('#vQ').hidden=true;$('#vD').hidden=false;drawD()}
+function drawD(){$('#dh').textContent=cur.patient.full_name;$('#ds').innerHTML='<span class="badge b-'+cur.status+'">'+cur.status.replace('_',' ')+'</span>';$('#dm').textContent='Appointment #'+cur.appointment_id+' at '+t(cur.start_time);
+ var n=NOTES[cur.appointment_id]||[];$('#notes').innerHTML=n.length?n.map(function(x){return '<article class="card"><div class="hint">'+t(x.created_at)+'</div><p style="margin:4px 0 0">'+esc(x.text)+'</p></article>'}).join(''):'<div class="empty">No notes yet.</div>';
+ $('#nf').hidden=cur.status!=='COMPLETED';$('#nnote').hidden=cur.status==='COMPLETED'}
+$('#db').onclick=function(){$('#vD').hidden=true;$('#vQ').hidden=false;drawQ()};
+$('#nt').oninput=function(){$('#cnt').textContent=$('#nt').value.length};
+$('#nf').onsubmit=function(e){e.preventDefault();var v=$('#nt').value.trim();if(!v){$('#nmsg').innerHTML='<div class="msg err" role="alert">Note cannot be empty. (422 VALIDATION_ERROR)</div>';return}
+ if(sm==='409'){$('#nmsg').innerHTML='<div class="msg err" role="alert">Notes can only be added to COMPLETED appointments. (409 INVALID_APPOINTMENT_STATE)</div>';return}
+ (NOTES[cur.appointment_id]=NOTES[cur.appointment_id]||[]).push({note_id:Date.now(),appointment_id:cur.appointment_id,author_id:7,text:v,created_at:new Date().toISOString()});$('#nt').value='';$('#cnt').textContent=0;$('#nmsg').innerHTML='<div class="msg ok">Note appended (201).</div>';live('Note appended.');drawD()};
+function tab(w){$('#vQ').hidden=w!=='Q';$('#vC').hidden=w!=='C';$('#vD').hidden=true;$('#tQ').setAttribute('aria-current',w==='Q'?'page':'false');$('#tC').setAttribute('aria-current',w==='C'?'page':'false')}
+$('#tQ').onclick=function(e){e.preventDefault();tab('Q');drawQ()};$('#tC').onclick=function(e){e.preventDefault();tab('C');drawC()};
+drawQ();
+</script></body></html>

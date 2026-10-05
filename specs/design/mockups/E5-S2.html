@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>E5-S2 Patient: search, slots, booking - Mockup</title>
+<!-- Mockup for E5-S2 (375px-first). Aligned to api-contracts.md API-09/10/11/21. DoctorSummary: doctor_id, full_name, specialty, languages[], fee (string), earliest_slot. Slot: slot_id, doctor_id, start_time, end_time, status. Appointment: appointment_id, status, fee, doctor{}, start_time. No schema gaps. -->
+<style>
+:root{--paper:#f6f1e7;--card:#fffdf8;--ink:#14302f;--ink2:#41605d;--line:#d9cfba;--teal:#0f5c58;--teal2:#0b4643;--clay:#b4472b;--gold:#e7b53c;--ok:#1f6b3a;--okbg:#dcefe0;--warn:#7a5200;--warnbg:#fbeac2;--err:#8f2a14;--errbg:#f9ddd4;--info:#1d4e7a;--infobg:#dbe8f5}
+*{box-sizing:border-box}html,body{margin:0;overflow-x:hidden}
+body{background:var(--paper);color:var(--ink);font:16px/1.5 "Segoe UI",Candara,"Gill Sans",sans-serif}
+h1,h2,h3,.display{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-weight:700;letter-spacing:-.01em;margin:0 0 .4em}
+h1{font-size:1.9rem}h2{font-size:1.4rem}h3{font-size:1.1rem}
+.mockbar{background:#1b1b1b;color:#eee;padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font:12px/1.2 ui-monospace,Consolas,monospace;position:sticky;top:0;z-index:50}
+.mockbar b{color:var(--gold);margin-right:4px}
+.mockbar button{background:#333;color:#eee;border:1px solid #555;border-radius:4px;padding:6px 10px;min-height:32px;font:inherit;cursor:pointer}
+.mockbar button[aria-pressed=true]{background:var(--gold);color:#111;border-color:var(--gold)}
+.api{display:inline-block;font:11px/1.3 ui-monospace,Consolas,monospace;background:#efe6cf;color:#5a4300;border:1px dashed #b9a15c;border-radius:3px;padding:1px 6px;margin-left:6px;vertical-align:middle;white-space:normal;overflow-wrap:anywhere;font-weight:400}
+.wrap{max-width:1180px;margin:0 auto;padding:16px}
+.topnav{background:var(--teal);color:#fff;display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;padding:8px 16px}
+.topnav .brand{font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-right:auto}
+.topnav a,.topnav button{color:#fff;background:none;border:0;text-decoration:none;min-height:44px;min-width:44px;padding:0 8px;display:inline-flex;align-items:center;font:inherit;cursor:pointer;border-bottom:3px solid transparent}
+.topnav a[aria-current=page]{border-bottom-color:var(--gold)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:12px;box-shadow:0 1px 0 #e8dfc9}
+.grid{display:grid;gap:12px}
+@media(min-width:900px){.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.sidebar{grid-template-columns:280px 1fr}}
+label{display:block;font-weight:600;font-size:.9rem;margin:10px 0 4px}
+input,select,textarea{width:100%;min-height:44px;padding:8px 10px;border:1.5px solid #8b9a96;border-radius:6px;background:#fff;color:var(--ink);font:inherit}
+input:focus,select:focus,textarea:focus,button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:1px}
+input[aria-invalid=true]{border-color:var(--clay);background:#fff6f3}
+.btn{min-height:44px;min-width:44px;padding:8px 16px;border-radius:6px;border:1.5px solid var(--teal);background:var(--teal);color:#fff;font-weight:600;font-size:1rem;font-family:inherit;cursor:pointer}
+.btn:hover:not(:disabled){background:var(--teal2)}
+.btn.sec{background:transparent;color:var(--teal)}
+.btn.danger{background:var(--clay);border-color:var(--clay)}
+.btn.danger.sec{background:transparent;color:var(--clay)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.block{width:100%}
+.hint{font-size:.85rem;color:var(--ink2)}
+.err{color:var(--err);font-size:.85rem;margin-top:3px}
+.msg{padding:10px 12px;border-radius:6px;margin:10px 0;font-size:.92rem;border-left:5px solid}
+.msg.err{background:var(--errbg);border-color:var(--clay);color:var(--err);font-size:.92rem}
+.msg.ok{background:var(--okbg);border-color:var(--ok);color:var(--ok)}
+.msg.warn{background:var(--warnbg);border-color:var(--gold);color:var(--warn)}
+.msg.info{background:var(--infobg);border-color:var(--info);color:var(--info)}
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.78rem;font-weight:700;letter-spacing:.04em;border:1px solid}
+.b-BOOKED{background:var(--infobg);color:var(--info);border-color:var(--info)}
+.b-CHECKED_IN{background:var(--warnbg);color:var(--warn);border-color:var(--warn)}
+.b-IN_PROGRESS{background:#e8dcf5;color:#4b2a7a;border-color:#4b2a7a}
+.b-COMPLETED{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
+.b-CANCELLED{background:#e7e2d6;color:#55503f;border-color:#55503f}
+.b-NO_SHOW{background:var(--errbg);color:var(--err);border-color:var(--err)}
+.b-AVAILABLE{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
+.b-BLOCKED{background:#e7e2d6;color:#55503f;border-color:#55503f}
+.b-ACTIVE{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
+.b-INACTIVE{background:var(--errbg);color:var(--err);border-color:var(--err)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.sp{justify-content:space-between}
+.state{display:none}.state.on{display:block}
+.skel{background:linear-gradient(90deg,#eadfc6,#f6efdd,#eadfc6);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:6px;height:18px;margin:8px 0}
+@keyframes sh{to{background-position:-200% 0}}
+.empty{text-align:center;padding:32px 12px;color:var(--ink2);border:2px dashed var(--line);border-radius:10px}
+.fee{font-family:Georgia,serif;font-weight:700;font-size:1.1rem}
+.sr{position:absolute;left:-9999px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2)}
+.chip{min-height:44px;min-width:44px;padding:6px 12px;border:1.5px solid var(--teal);border-radius:8px;background:#fff;color:var(--teal);font-weight:600;font-size:.95rem;font-family:inherit;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--teal);color:#fff}.chip:disabled{opacity:.45;cursor:not-allowed;background:#eee;border-color:#aaa;color:#555}
+.modal-bg{position:fixed;inset:0;background:rgba(20,48,47,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:100}
+.modal-bg.on{display:flex}.modal{background:var(--card);border-radius:10px;padding:20px;max-width:440px;width:100%}
+@media(max-width:700px){.resp thead{display:none}.resp tr{display:block;border:1px solid var(--line);border-radius:8px;margin-bottom:10px;padding:6px;background:var(--card)}.resp td{display:block;border:0;padding:4px 8px}.resp td::before{content:attr(data-l);font-weight:700;font-size:.75rem;text-transform:uppercase;color:var(--ink2);display:block}}
+
+.doc{display:grid;gap:8px}
+.avatar{width:48px;height:48px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-weight:700;flex:none}
+.filters{display:grid;gap:8px}
+@media(min-width:700px){.filters{grid-template-columns:repeat(5,1fr);align-items:end}.doc{grid-template-columns:1fr auto;align-items:center}}
+.slots{display:flex;flex-wrap:wrap;gap:8px}
+</style></head>
+<body>
+<div class="mockbar" role="toolbar" aria-label="Mockup controls">
+<b>STATE</b>
+<button data-s="results" aria-pressed="true">Results</button><button data-s="loading" aria-pressed="false">Loading</button><button data-s="empty" aria-pressed="false">Empty</button><button data-s="error" aria-pressed="false">Error</button>
+<b style="margin-left:12px">BOOKING</b>
+<button data-b="ok" aria-pressed="true">201 success</button><button data-b="409" aria-pressed="false">409 taken</button>
+</div>
+<header class="topnav"><span class="brand">Telemed</span><nav aria-label="Patient"><a href="#" aria-current="page">Find a doctor</a><a href="#">My appointments</a><a href="#">Profile</a></nav></header>
+<main class="wrap">
+<div id="live" role="alert" aria-live="polite" class="sr"></div>
+
+<section id="p-search" aria-labelledby="hs">
+<h1 id="hs">Find a doctor</h1>
+<form class="card filters" id="f" aria-label="Filters">
+<div><label for="fs">Specialty</label><select id="fs"><option value="">Any</option><option>Cardiology</option><option>Dermatology</option><option>Pediatrics</option></select></div>
+<div><label for="fl">Language</label><select id="fl"><option value="">Any</option><option value="en">English</option><option value="hi">Hindi</option><option value="ta">Tamil</option></select></div>
+<div><label for="ff">Available from</label><input id="ff" type="date"></div>
+<div><label for="ft">Available to</label><input id="ft" type="date"></div>
+<div><label for="so">Sort by</label><select id="so"><option value="earliest_slot">Earliest slot</option><option value="fee">Fee</option><option value="name">Name</option></select></div>
+</form>
+<p class="hint"><span class="api">GET /api/doctors?specialty=&amp;language=&amp;available_from=&amp;available_to=&amp;sort=earliest_slot|fee|name</span> Times in your local zone.</p>
+<div id="list" aria-live="polite"></div>
+</section>
+
+<section id="p-detail" hidden aria-labelledby="hd">
+<p><button class="btn sec" id="back">&larr; Back to results</button></p>
+<div class="card"><div class="row"><div class="avatar" id="dav"></div><div><h1 id="hd" style="margin:0"></h1><div id="dmeta" class="hint"></div></div></div>
+<p>Consultation fee <span class="fee" id="dfee"></span></p></div>
+<h2>Open slots, next 14 days <span class="api">GET /api/doctors/{doctor_id}/slots</span></h2>
+<div id="inline"></div>
+<div id="slotBox"></div>
+<div class="card" id="confirmBar" style="position:sticky;bottom:8px;border-color:var(--teal)">
+<p id="sel" style="margin:0 0 8px">No slot selected.</p>
+<button class="btn block" id="bookBtn" disabled>Review booking</button>
+</div>
+</section>
+
+<section id="p-confirm" hidden aria-labelledby="hc">
+<div class="card" style="border-color:var(--ok)">
+<h1 id="hc">Confirm your booking</h1>
+<table><tbody><tr><th scope="row">Doctor</th><td id="cdoc"></td></tr><tr><th scope="row">Time</th><td id="ctime"></td></tr><tr><th scope="row">Fee</th><td id="cfee" class="fee"></td></tr><tr><th scope="row">Status</th><td id="cstat"><span class="badge b-BOOKED" hidden>BOOKED</span><span class="hint" id="cpre">Not yet booked</span></td></tr></tbody></table>
+<div class="row" style="margin-top:12px"><button class="btn" id="confirm">Confirm booking <span class="api">POST /api/appointments {slot_id}</span></button><button class="btn sec" id="cback">Change slot</button></div>
+<div id="cmsg"></div>
+</div></section>
+</main>
+<script>
+function $(s,r){return (r||document).querySelector(s)}function $$(s,r){return [...(r||document).querySelectorAll(s)]}
+function live(msg){var l=$('#live');l.textContent='';setTimeout(function(){l.textContent=msg},30)}
+function bindBar(group,cb){$$('.mockbar [data-'+group+']').forEach(function(b){b.addEventListener('click',function(){$$('.mockbar [data-'+group+']').forEach(function(x){x.setAttribute('aria-pressed','false')});b.setAttribute('aria-pressed','true');cb(b.dataset[group])})})}
+function show(prefix,id){$$('.state[id^="'+prefix+'"]').forEach(function(e){e.classList.toggle('on',e.id===prefix+id)})}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function fmtLocal(iso){var d=new Date(iso);var t=d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:false});var z=(d.toLocaleTimeString([], {timeZoneName:'short'}).split(' ').pop());return t+' '+z}
+function fmtDay(iso){return new Date(iso).toLocaleDateString([], {weekday:'short',day:'numeric',month:'short'})}
+
+var base=new Date();base.setMinutes(0,0,0);
+function mk(dayOff,h,m){var d=new Date(base);d.setDate(d.getDate()+dayOff);d.setHours(h,m,0,0);return d.toISOString()}
+var DOCS=[
+{doctor_id:11,full_name:'Dr. Anjali Menon',specialty:'Cardiology',languages:['en','hi'],fee:'800.00',off:[[1,10,0],[1,10,30],[1,11,0],[3,15,0],[3,15,30],[6,9,30],[9,10,0]]},
+{doctor_id:12,full_name:'Dr. Rohan Iyer',specialty:'Dermatology',languages:['en','ta'],fee:'500.00',off:[[1,9,0],[2,9,30],[2,10,0],[4,16,0],[8,11,30]]},
+{doctor_id:13,full_name:'Dr. Sunita Verma',specialty:'Pediatrics',languages:['hi','en'],fee:'450.00',off:[[2,14,0],[2,14,30],[5,10,0],[5,10,30],[11,17,0]]}];
+DOCS.forEach(function(d){d.slots=d.off.map(function(o,i){var s=mk(o[0],o[1],o[2]);return {slot_id:d.doctor_id*100+i,doctor_id:d.doctor_id,start_time:s,end_time:new Date(new Date(s).getTime()+1800000).toISOString(),status:'AVAILABLE'}});d.earliest_slot=d.slots[0].start_time});
+var state='results',bmode='ok',cur=null,selSlot=null;
+function init(d){return d.full_name.split(' ').slice(-2).map(function(x){return x[0]}).join('')}
+function renderList(){
+ var box=$('#list');
+ if(state==='loading'){box.innerHTML='<div class="card"><div class="skel"></div><div class="skel" style="width:70%"></div></div><div class="card"><div class="skel"></div><div class="skel" style="width:50%"></div></div>';return}
+ if(state==='error'){box.innerHTML='<div class="msg err" role="alert">Could not load doctors. Please try again. <button class="btn sec" id="retry">Retry</button></div>';$('#retry').onclick=function(){setS('results')};return}
+ var l=state==='empty'?[]:DOCS.filter(function(d){return(!$('#fs').value||d.specialty===$('#fs').value)&&(!$('#fl').value||d.languages.indexOf($('#fl').value)>-1)});
+ var s=$('#so').value;l=l.slice().sort(function(a,b){return s==='fee'?parseFloat(a.fee)-parseFloat(b.fee):s==='name'?a.full_name.localeCompare(b.full_name):new Date(a.earliest_slot)-new Date(b.earliest_slot)});
+ if(!l.length){box.innerHTML='<div class="empty"><h3>No doctors match</h3><p>Try a different specialty, language or date range.</p></div>';return}
+ box.innerHTML=l.map(function(d){return '<article class="card doc"><div class="row" style="flex-wrap:nowrap"><div class="avatar" aria-hidden="true">'+init(d)+'</div><div><h2 style="margin:0;font-size:1.15rem">'+esc(d.full_name)+'</h2><div class="hint">'+d.specialty+' &middot; '+d.languages.join(', ')+'</div><div>Next open: <strong>'+fmtDay(d.earliest_slot)+', '+fmtLocal(d.earliest_slot)+'</strong></div></div></div><div class="row sp"><span class="fee">'+d.fee+'</span><button class="btn" data-id="'+d.doctor_id+'">View slots</button></div></article>'}).join('');
+ $$('#list [data-id]').forEach(function(b){b.onclick=function(){openDoc(+b.dataset.id)}});
+}
+function setS(s){state=s;$$('.mockbar [data-s]').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.s===s)});renderList()}
+function openDoc(id){cur=DOCS.filter(function(d){return d.doctor_id===id})[0];selSlot=null;$('#p-search').hidden=true;$('#p-detail').hidden=false;$('#p-confirm').hidden=true;
+ $('#hd').textContent=cur.full_name;$('#dav').textContent=init(cur);$('#dmeta').textContent=cur.specialty+' · '+cur.languages.join(', ');$('#dfee').textContent=cur.fee;$('#inline').innerHTML='';drawSlots()}
+function drawSlots(){
+ var by={};cur.slots.forEach(function(s){var k=fmtDay(s.start_time);(by[k]=by[k]||[]).push(s)});
+ var h='';Object.keys(by).forEach(function(k){h+='<div class="card"><h3>'+k+'</h3><div class="slots" role="group" aria-label="Slots on '+k+'">'+by[k].map(function(s){return '<button class="chip" aria-pressed="'+(selSlot&&selSlot.slot_id===s.slot_id)+'" data-slot="'+s.slot_id+'">'+fmtLocal(s.start_time)+'</button>'}).join('')+'</div></div>'});
+ $('#slotBox').innerHTML=cur.slots.length?h:'<div class="empty">No open slots in the next 14 days.</div>';
+ $$('#slotBox [data-slot]').forEach(function(b){b.onclick=function(){selSlot=cur.slots.filter(function(s){return s.slot_id===+b.dataset.slot})[0];drawSlots()}});
+ $('#sel').textContent=selSlot?'Selected: '+fmtDay(selSlot.start_time)+', '+fmtLocal(selSlot.start_time)+' - '+cur.fee:'No slot selected.';$('#bookBtn').disabled=!selSlot;
+ $('#bookBtn').innerHTML='Review booking <span class="api">then POST /api/appointments</span>';
+}
+$('#bookBtn').onclick=function(){$('#p-detail').hidden=true;$('#p-confirm').hidden=false;$('#cdoc').textContent=cur.full_name;$('#ctime').textContent=fmtDay(selSlot.start_time)+', '+fmtLocal(selSlot.start_time);$('#cfee').textContent=cur.fee;$('#cmsg').innerHTML='';$('#confirm').disabled=false;$('#cpre').hidden=false;$('#cstat .badge').hidden=true;$('#hc').textContent='Confirm your booking'};
+$('#cback').onclick=function(){$('#p-confirm').hidden=true;$('#p-detail').hidden=false};
+$('#confirm').onclick=function(){
+ if(bmode==='409'){cur.slots=cur.slots.filter(function(s){return s.slot_id!==selSlot.slot_id});selSlot=null;$('#p-confirm').hidden=true;$('#p-detail').hidden=false;
+  $('#inline').innerHTML='<div class="msg err" role="alert">That slot is no longer available. (409 SLOT_UNAVAILABLE) The slot list was refreshed.</div>';live('That slot is no longer available. The slot list was refreshed.');drawSlots();return}
+ $('#hc').textContent='Booking confirmed';$('#cpre').hidden=true;$('#cstat .badge').hidden=false;$('#confirm').disabled=true;
+ $('#cmsg').innerHTML='<div class="msg ok">appointment_id 5021 created with status BOOKED (201). A video link will appear in My appointments.</div>';live('Booking confirmed.')};
+$('#back').onclick=function(){$('#p-detail').hidden=true;$('#p-search').hidden=false};
+bindBar('s',setS);bindBar('b',function(b){bmode=b});
+$$('#f select,#f input').forEach(function(e){e.onchange=function(){renderList()}});
+renderList();
+</script></body></html>

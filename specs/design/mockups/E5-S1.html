@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>E5-S1 Shell, auth screens, session, route guards - Mockup</title>
+<!-- Mockup for E5-S1. Aligned to api-contracts.md API-03/04/05/02. Register body (AC-01): email, password, full_name, age (integer 1..130), gender (FEMALE|MALE|OTHER|UNDISCLOSED), phone - all required, 422 VALIDATION_ERROR with field-level errors[] (role never sent). Login response: access_token, token_type, expires_in, expires_at, user_id, role. Error body: code, message, errors[]. No schema gaps. -->
+<style>
+:root{--paper:#f6f1e7;--card:#fffdf8;--ink:#14302f;--ink2:#41605d;--line:#d9cfba;--teal:#0f5c58;--teal2:#0b4643;--clay:#b4472b;--gold:#e7b53c;--ok:#1f6b3a;--okbg:#dcefe0;--warn:#7a5200;--warnbg:#fbeac2;--err:#8f2a14;--errbg:#f9ddd4;--info:#1d4e7a;--infobg:#dbe8f5}
+*{box-sizing:border-box}html,body{margin:0;overflow-x:hidden}
+body{background:var(--paper);color:var(--ink);font:16px/1.5 "Segoe UI",Candara,"Gill Sans",sans-serif}
+h1,h2,h3,.display{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-weight:700;letter-spacing:-.01em;margin:0 0 .4em}
+h1{font-size:1.9rem}h2{font-size:1.4rem}h3{font-size:1.1rem}
+.mockbar{background:#1b1b1b;color:#eee;padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font:12px/1.2 ui-monospace,Consolas,monospace;position:sticky;top:0;z-index:50}
+.mockbar b{color:var(--gold);margin-right:4px}
+.mockbar button{background:#333;color:#eee;border:1px solid #555;border-radius:4px;padding:6px 10px;min-height:32px;font:inherit;cursor:pointer}
+.mockbar button[aria-pressed=true]{background:var(--gold);color:#111;border-color:var(--gold)}
+.api{display:inline-block;font:11px/1.3 ui-monospace,Consolas,monospace;background:#efe6cf;color:#5a4300;border:1px dashed #b9a15c;border-radius:3px;padding:1px 6px;margin-left:6px;vertical-align:middle;white-space:normal;overflow-wrap:anywhere;font-weight:400}
+.wrap{max-width:1180px;margin:0 auto;padding:16px}
+.topnav{background:var(--teal);color:#fff;display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;padding:8px 16px}
+.topnav .brand{font-family:Georgia,serif;font-size:1.25rem;font-weight:700;margin-right:auto}
+.topnav a,.topnav button{color:#fff;background:none;border:0;text-decoration:none;min-height:44px;min-width:44px;padding:0 8px;display:inline-flex;align-items:center;font:inherit;cursor:pointer;border-bottom:3px solid transparent}
+.topnav a[aria-current=page]{border-bottom-color:var(--gold)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:12px;box-shadow:0 1px 0 #e8dfc9}
+.grid{display:grid;gap:12px}
+@media(min-width:900px){.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.sidebar{grid-template-columns:280px 1fr}}
+label{display:block;font-weight:600;font-size:.9rem;margin:10px 0 4px}
+input,select,textarea{width:100%;min-height:44px;padding:8px 10px;border:1.5px solid #8b9a96;border-radius:6px;background:#fff;color:var(--ink);font:inherit}
+input:focus,select:focus,textarea:focus,button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:1px}
+input[aria-invalid=true]{border-color:var(--clay);background:#fff6f3}
+.btn{min-height:44px;min-width:44px;padding:8px 16px;border-radius:6px;border:1.5px solid var(--teal);background:var(--teal);color:#fff;font-weight:600;font-size:1rem;font-family:inherit;cursor:pointer}
+.btn:hover:not(:disabled){background:var(--teal2)}
+.btn.sec{background:transparent;color:var(--teal)}
+.btn.danger{background:var(--clay);border-color:var(--clay)}
+.btn.danger.sec{background:transparent;color:var(--clay)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.block{width:100%}
+.hint{font-size:.85rem;color:var(--ink2)}
+.err{color:var(--err);font-size:.85rem;margin-top:3px}
+.msg{padding:10px 12px;border-radius:6px;margin:10px 0;font-size:.92rem;border-left:5px solid}
+.msg.err{background:var(--errbg);border-color:var(--clay);color:var(--err);font-size:.92rem}
+.msg.ok{background:var(--okbg);border-color:var(--ok);color:var(--ok)}
+.msg.warn{background:var(--warnbg);border-color:var(--gold);color:var(--warn)}
+.msg.info{background:var(--infobg);border-color:var(--info);color:var(--info)}
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.78rem;font-weight:700;letter-spacing:.04em;border:1px solid}
+.b-BOOKED{background:var(--infobg);color:var(--info);border-color:var(--info)}
+.b-CHECKED_IN{background:var(--warnbg);color:var(--warn);border-color:var(--warn)}
+.b-IN_PROGRESS{background:#e8dcf5;color:#4b2a7a;border-color:#4b2a7a}
+.b-COMPLETED{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
+.b-CANCELLED{background:#e7e2d6;color:#55503f;border-color:#55503f}
+.b-NO_SHOW{background:var(--errbg);color:var(--err);border-color:var(--err)}
+.b-AVAILABLE{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
+.b-BLOCKED{background:#e7e2d6;color:#55503f;border-color:#55503f}
+.b-ACTIVE{background:var(--okbg);color:var(--ok);border-color:var(--ok)}
+.b-INACTIVE{background:var(--errbg);color:var(--err);border-color:var(--err)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.sp{justify-content:space-between}
+.state{display:none}.state.on{display:block}
+.skel{background:linear-gradient(90deg,#eadfc6,#f6efdd,#eadfc6);background-size:200% 100%;animation:sh 1.2s infinite;border-radius:6px;height:18px;margin:8px 0}
+@keyframes sh{to{background-position:-200% 0}}
+.empty{text-align:center;padding:32px 12px;color:var(--ink2);border:2px dashed var(--line);border-radius:10px}
+.fee{font-family:Georgia,serif;font-weight:700;font-size:1.1rem}
+.sr{position:absolute;left:-9999px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2)}
+.chip{min-height:44px;min-width:44px;padding:6px 12px;border:1.5px solid var(--teal);border-radius:8px;background:#fff;color:var(--teal);font-weight:600;font-size:.95rem;font-family:inherit;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--teal);color:#fff}.chip:disabled{opacity:.45;cursor:not-allowed;background:#eee;border-color:#aaa;color:#555}
+.modal-bg{position:fixed;inset:0;background:rgba(20,48,47,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:100}
+.modal-bg.on{display:flex}.modal{background:var(--card);border-radius:10px;padding:20px;max-width:440px;width:100%}
+@media(max-width:700px){.resp thead{display:none}.resp tr{display:block;border:1px solid var(--line);border-radius:8px;margin-bottom:10px;padding:6px;background:var(--card)}.resp td{display:block;border:0;padding:4px 8px}.resp td::before{content:attr(data-l);font-weight:700;font-size:.75rem;text-transform:uppercase;color:var(--ink2);display:block}}
+
+.auth{max-width:420px;margin:24px auto}
+.hero{font-family:Georgia,serif;font-size:2.2rem;line-height:1.1;color:var(--teal)}
+.cross{font-size:2.4rem;color:var(--clay)}
+pre{background:#14302f;color:#e8f3ef;padding:10px;border-radius:6px;overflow:auto;font-size:.8rem;white-space:pre-wrap;word-break:break-all}
+</style></head>
+<body>
+<div class="mockbar" role="toolbar" aria-label="Mockup controls">
+<b>VIEW</b>
+<button data-view="login" aria-pressed="true">Login</button><button data-view="register" aria-pressed="false">Register</button><button data-view="notallowed" aria-pressed="false">Not allowed (403)</button><button data-view="notfound" aria-pressed="false">Not found (404)</button><button data-view="guard" aria-pressed="false">Route guard demo</button>
+<b style="margin-left:12px">STATE</b>
+<button data-st="idle" aria-pressed="true">Idle</button><button data-st="loading" aria-pressed="false">Loading</button><button data-st="e409" aria-pressed="false">409 duplicate</button><button data-st="e401" aria-pressed="false">401 generic</button><button data-st="e503" aria-pressed="false">503</button>
+</div>
+<header class="topnav"><span class="brand">Telemed</span><nav aria-label="Primary"><a href="#" id="navlogin" aria-current="page">Log in</a><a href="#" id="navreg">Register</a></nav></header>
+<main class="wrap">
+<div id="liveBox" role="status" aria-live="polite" class="sr"></div>
+<div id="live" aria-live="assertive" role="alert" class="sr"></div>
+
+<section id="v-login" class="state on auth card" aria-labelledby="h-login">
+<p class="hero">Care, from wherever you are.</p>
+<h1 id="h-login">Log in</h1>
+<div id="banner"></div>
+<form id="loginForm" novalidate>
+<label for="le">Email</label><input id="le" type="email" autocomplete="username" value="meera.nair@example.test" required>
+<label for="lp">Password</label><input id="lp" type="password" autocomplete="current-password" value="correct-horse-9" required>
+<p class="hint" style="margin:6px 0 0">Demo role for redirect preview:</p>
+<select id="roleSel" aria-label="Demo role (comes from server, never sent)"><option value="PATIENT">PATIENT</option><option value="DOCTOR">DOCTOR</option><option value="ADMIN">ADMIN</option></select>
+<p style="margin-top:14px"><button class="btn block" id="loginBtn" type="submit">Log in <span class="api">POST /api/auth/login</span></button></p>
+</form>
+<div class="state" id="loadingBox"><div class="skel"></div><div class="skel" style="width:60%"></div></div>
+<p class="hint">New here? <a href="#" id="toReg">Create an account</a></p>
+<div id="session" class="msg info" hidden></div>
+<pre id="storage" aria-label="Storage inspector" hidden></pre>
+</section>
+
+<section id="v-register" class="state auth card" aria-labelledby="h-reg">
+<h1 id="h-reg">Create account</h1>
+<p class="hint">Patients only. Doctors are onboarded by an admin. Role is never sent in the request body.</p>
+<div id="regBanner"></div>
+<form id="regForm" novalidate>
+<label for="rn">Full name <span class="hint">full_name, required</span></label><input id="rn" name="full_name" autocomplete="name" required aria-describedby="rne" value="Arjun Rao">
+<div id="rne" class="err" hidden></div>
+<div class="grid g2"><div><label for="ra">Age <span class="hint">age, 1 to 130</span></label><input id="ra" name="age" type="number" inputmode="numeric" min="1" max="130" step="1" required aria-describedby="rae" value="34"><div id="rae" class="err" hidden></div></div>
+<div><label for="rg">Gender <span class="hint">gender</span></label><select id="rg" name="gender" required aria-describedby="rge"><option value="">Select...</option><option value="FEMALE">Female</option><option value="MALE" selected>Male</option><option value="OTHER">Other</option><option value="UNDISCLOSED">Prefer not to say</option></select><div id="rge" class="err" hidden></div></div></div>
+<label for="rph">Phone (contact) <span class="hint">phone, required</span></label><input id="rph" name="phone" type="tel" autocomplete="tel" required aria-describedby="rphe" value="+91 98450 12345">
+<div id="rphe" class="err" hidden></div>
+<label for="re">Email (your login) <span class="hint">email</span></label><input id="re" name="email" type="email" autocomplete="email" aria-describedby="ree" value="arjun.rao@example.test">
+<div id="ree" class="err" hidden></div>
+<label for="rp">Password (8 to 128 characters)</label><input id="rp" name="password" type="password" autocomplete="new-password" aria-describedby="rpe" value="longenough1">
+<div id="rpe" class="err" hidden></div>
+<p style="margin-top:14px"><button class="btn block" type="submit">Register <span class="api">POST /api/auth/register</span></button></p>
+</form>
+<p class="hint">Already registered? <a href="#" id="toLog">Log in</a></p>
+</section>
+
+<section id="v-notallowed" class="state auth card" style="text-align:center" aria-labelledby="h-na">
+<div class="cross" aria-hidden="true">&#9940;</div><h1 id="h-na">Not allowed</h1>
+<p>Your account role does not have access to this page. <span class="api">server: 403 on role mismatch</span></p>
+<a class="btn" href="#" style="display:inline-flex;align-items:center;text-decoration:none">Go to my home</a>
+</section>
+
+<section id="v-notfound" class="state auth card" style="text-align:center" aria-labelledby="h-nf">
+<div class="cross" aria-hidden="true">?</div><h1 id="h-nf">Page not found</h1>
+<p>This page, or the record you tried to open, does not exist or is not yours. <span class="api">server: 404 on unknown / non-owned object</span></p>
+<a class="btn" href="#" style="display:inline-flex;align-items:center;text-decoration:none">Go to my home</a>
+</section>
+
+<section id="v-guard" class="state card" aria-labelledby="h-g">
+<h1 id="h-g">Route guard behaviour</h1>
+<table class="resp"><thead><tr><th>Visit</th><th>Session</th><th>Result</th></tr></thead><tbody>
+<tr><td data-l="Visit">/patient/doctors</td><td data-l="Session">none</td><td data-l="Result">Redirect to /login</td></tr>
+<tr><td data-l="Visit">/admin/users</td><td data-l="Session">PATIENT</td><td data-l="Result">Not allowed page</td></tr>
+<tr><td data-l="Visit">/patient/appointments/9999</td><td data-l="Session">PATIENT (not owner)</td><td data-l="Result">Not found page (server 404 NOT_FOUND)</td></tr>
+<tr><td data-l="Visit">any call</td><td data-l="Session">expired token</td><td data-l="Result">401 UNAUTHENTICATED clears sessionStorage, redirect to /login. (Login's own 401 INVALID_CREDENTIALS does NOT: it shows the generic message.)</td></tr>
+<tr><td data-l="Visit">any call</td><td data-l="Session">any</td><td data-l="Result">503 shows "The service is busy, please try again" with Retry (503 SERVICE_UNAVAILABLE)</td></tr>
+</tbody></table>
+<p><button class="btn sec" id="sim401">Simulate 401 from any call <span class="api">any protected endpoint, error.code UNAUTHENTICATED</span></button></p>
+<h3>Shared empty state</h3><div class="empty">Nothing here yet.</div>
+<h3>Shared error state</h3><div class="msg err" role="alert">Something went wrong. Please try again. <button class="btn sec" style="margin-left:8px">Retry</button></div>
+</section>
+</main>
+<script>
+function $(s,r){return (r||document).querySelector(s)}function $$(s,r){return [...(r||document).querySelectorAll(s)]}
+function live(msg){var l=$('#live');l.textContent='';setTimeout(function(){l.textContent=msg},30)}
+function bindBar(group,cb){$$('.mockbar [data-'+group+']').forEach(function(b){b.addEventListener('click',function(){$$('.mockbar [data-'+group+']').forEach(function(x){x.setAttribute('aria-pressed','false')});b.setAttribute('aria-pressed','true');cb(b.dataset[group])})})}
+function show(prefix,id){$$('.state[id^="'+prefix+'"]').forEach(function(e){e.classList.toggle('on',e.id===prefix+id)})}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function fmtLocal(iso){var d=new Date(iso);var t=d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:false});var z=(d.toLocaleTimeString([], {timeZoneName:'short'}).split(' ').pop());return t+' '+z}
+function fmtDay(iso){return new Date(iso).toLocaleDateString([], {weekday:'short',day:'numeric',month:'short'})}
+
+var homes={PATIENT:'/patient/doctors (doctor search)',DOCTOR:'/doctor/queue (daily queue)',ADMIN:'/admin/users (user list)'};
+var view='login',st='idle';
+function render(){
+ ['login','register','notallowed','notfound','guard'].forEach(function(v){$('#v-'+v).classList.toggle('on',v===view)});
+ $('#navlogin').setAttribute('aria-current',view==='login'?'page':'false');$('#navreg').setAttribute('aria-current',view==='register'?'page':'false');
+ var ban=view==='login'?$('#banner'):$('#regBanner');$('#banner').innerHTML='';$('#regBanner').innerHTML='';
+ $('#loadingBox').classList.toggle('on',st==='loading');$('#loginForm').style.display=st==='loading'?'none':'block';
+ var m='';
+ if(st==='e409'&&view==='register')m='An account with this email already exists. (409 EMAIL_ALREADY_REGISTERED)';
+ if(st==='e401'&&view==='login')m='Invalid email or password.';
+ if(st==='e503')m='The service is busy, please try again. (503 SERVICE_UNAVAILABLE)';
+ if(m){ban.innerHTML='<div class="msg err">'+m+'</div>';live(m)}
+ clearFieldErrors();
+}
+bindBar('view',function(v){view=v;render()});bindBar('st',function(s){st=s;render()});
+$('#toReg').onclick=function(e){e.preventDefault();view='register';render()};$('#toLog').onclick=function(e){e.preventDefault();view='login';render()};
+$('#navlogin').onclick=function(e){e.preventDefault();view='login';render()};$('#navreg').onclick=function(e){e.preventDefault();view='register';render()};
+$('#loginForm').addEventListener('submit',function(e){e.preventDefault();
+ if(st!=='idle'){render();return}
+ var role=$('#roleSel').value;
+ sessionStorage.setItem('access_token','demo.jwt.'+role.toLowerCase());
+ $('#session').hidden=false;$('#session').textContent='Login OK. Redirecting to '+homes[role];
+ $('#storage').hidden=false;$('#storage').textContent='sessionStorage.access_token = '+sessionStorage.getItem('access_token')+'\nexpires_at = (now + 30 min)'+'\nlocalStorage.length = '+localStorage.length+' (token is never written here)';
+ live('Logged in. Redirecting to '+homes[role]);
+});
+var REG_FIELDS={full_name:['#rn','#rne'],age:['#ra','#rae'],gender:['#rg','#rge'],phone:['#rph','#rphe'],email:['#re','#ree'],password:['#rp','#rpe']};
+function validateReg(){var e=[],n=$('#rn').value.trim(),a=$('#ra').value.trim(),g=$('#rg').value,p=$('#rph').value.trim(),em=$('#re').value.trim(),pw=$('#rp').value;
+ if(!n||n.length>200)e.push({field:'full_name',message:'Full name is required (1 to 200 characters).'});
+ var ai=Number(a);if(a===''||!/^\d+$/.test(a)||ai<1||ai>130)e.push({field:'age',message:'Age must be a whole number from 1 to 130.'});
+ if(['FEMALE','MALE','OTHER','UNDISCLOSED'].indexOf(g)<0)e.push({field:'gender',message:'Select a gender.'});
+ if(!p||p.length>32)e.push({field:'phone',message:'Phone number is required (up to 32 characters).'});
+ if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em))e.push({field:'email',message:'Enter a valid email address.'});
+ if(pw.length<8||pw.length>128)e.push({field:'password',message:'Password must be 8 to 128 characters.'});
+ return e}
+function clearFieldErrors(){Object.keys(REG_FIELDS).forEach(function(k){$(REG_FIELDS[k][0]).removeAttribute('aria-invalid');var m=$(REG_FIELDS[k][1]);m.hidden=true;m.textContent=''})}
+function showFieldErrors(errs){clearFieldErrors();errs.forEach(function(x){var f=REG_FIELDS[x.field];if(!f)return;$(f[0]).setAttribute('aria-invalid','true');var m=$(f[1]);m.hidden=false;m.textContent=x.message+' (422 VALIDATION_ERROR, errors[].field = '+x.field+')'});
+ $(REG_FIELDS[errs[0].field][0]).focus();live(errs.length+' field'+(errs.length>1?'s':'')+' need attention: '+errs.map(function(x){return x.field}).join(', '))}
+$('#regForm').addEventListener('submit',function(e){e.preventDefault();
+ var errs=validateReg();
+ if(errs.length){showFieldErrors(errs);return}
+ clearFieldErrors();
+ if(st==='e409'){render();return}
+ $('#regBanner').innerHTML='<div class="msg ok">Account created (201, user_id 12, role PATIENT; profile saved as version 1). Please log in.</div>';live('Account created. Please log in.');
+});
+$('#sim401').onclick=function(){sessionStorage.clear();view='login';st='e401';render();$('#banner').innerHTML='<div class="msg warn">Your session expired. Please log in again.</div>';live('Your session expired. Please log in again.')};
+render();
+</script></body></html>
