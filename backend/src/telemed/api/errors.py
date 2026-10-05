@@ -10,6 +10,8 @@ from telemed.service import bootstrap
 from telemed.types.errors import (
     DomainError,
     EmailAlreadyRegisteredException,
+    ForbiddenException,
+    InputValidationException,
     InvalidAppointmentStateException,
     InvalidCredentialsException,
     NotFoundException,
@@ -22,6 +24,7 @@ _DOMAIN: dict[type[DomainError], tuple[int, str]] = {
     EmailAlreadyRegisteredException: (409, "That email is already registered."),
     InvalidCredentialsException: (401, "Invalid email or password."),
     NotFoundException: (404, "Resource not found."),
+    ForbiddenException: (403, "You do not have access to this resource."),
 }
 _HTTP_CODES = {
     401: "UNAUTHENTICATED",
@@ -47,8 +50,13 @@ def error_body(
 
 
 def _field_path(loc: tuple[Any, ...]) -> str:
-    parts = [str(part) for part in loc if part not in ("body", "query", "path")]
-    return ".".join(parts)
+    path = ""
+    for part in loc:
+        if isinstance(part, int):
+            path += f"[{part}]"
+        elif part not in ("body", "query", "path"):
+            path += f".{part}" if path else str(part)
+    return path or "body"
 
 
 async def _domain_error(_request: Request, exc: Exception) -> JSONResponse:
@@ -63,6 +71,14 @@ async def _validation_error(_request: Request, exc: Exception) -> JSONResponse:
         {"field": _field_path(tuple(item["loc"])), "message": str(item["msg"])}
         for item in exc.errors()
     ]
+    return JSONResponse(
+        error_body("VALIDATION_ERROR", "The request is invalid.", errors), status_code=422
+    )
+
+
+async def _input_validation_error(_request: Request, exc: Exception) -> JSONResponse:
+    assert isinstance(exc, InputValidationException)
+    errors = [{"field": item.field, "message": item.message} for item in exc.errors]
     return JSONResponse(
         error_body("VALIDATION_ERROR", "The request is invalid.", errors), status_code=422
     )
@@ -90,5 +106,6 @@ def unhandled_response(exc: BaseException) -> JSONResponse:
 
 def register_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(DomainError, _domain_error)
+    app.add_exception_handler(InputValidationException, _input_validation_error)
     app.add_exception_handler(RequestValidationError, _validation_error)
     app.add_exception_handler(StarletteHTTPException, _http_error)

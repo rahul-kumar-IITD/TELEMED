@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body { margin: 0; overflow-x: hidden; }
+body { @apply bg-paper text-ink; font: 16px/1.5 "Segoe UI", Candara, "Gill Sans", sans-serif; }
+h1, h2, h3 { @apply font-display font-bold; margin: 0 0 .4em; }
+h1 { font-size: 1.9rem; }
+
+@layer components {
+  .card { @apply bg-card border border-line rounded-[10px] p-4 mb-3; }
+  .field { @apply w-full min-h-[44px] px-2.5 py-2 border-[1.5px] border-[#8b9a96] rounded-md bg-white text-ink; font: inherit; }
+  .field[aria-invalid="true"] { @apply border-clay bg-[#fff6f3]; }
+  .field:focus, .btn:focus-visible, a:focus-visible { outline: 3px solid #e7b53c; outline-offset: 1px; }
+  .btn { @apply min-h-[44px] min-w-[44px] px-4 py-2 rounded-md border-[1.5px] border-teal bg-teal text-white font-semibold cursor-pointer inline-flex items-center justify-center no-underline; }
+  .btn:hover:not(:disabled) { @apply bg-teal-dark; }
+  .btn:disabled { @apply opacity-50 cursor-not-allowed; }
+  .btn-sec { @apply bg-transparent text-teal; }
+  .msg { @apply px-3 py-2.5 rounded-md my-2.5 text-[.92rem] border-l-[5px]; }
+  .msg-err { @apply bg-errbg border-clay text-err; }
+  .msg-ok { @apply bg-okbg border-okc text-okc; }
+  .msg-info { @apply bg-infobg border-infoc text-infoc; }
+  .skel { @apply rounded-md h-[18px] my-2 animate-pulse bg-line; }
+}

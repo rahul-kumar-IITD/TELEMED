@@ -39,3 +39,6 @@ E1-S3, E2-S1, E3-S1 implemented; gates 1-5 green; coverage 100%; new deps argon2
 
 ## Group C - PASS (lean) 2026-10-06
 E1-S4 (get_current_user, require_roles, access.py, GET /api/auth/me) implemented; gates 1-5 green; coverage 100%. Plus user-requested C-UR-1 (NFR-04): JWT secret hardening, no committed default.
+
+## Group D - PASS (lean) 2026-10-06
+E1-S5, E2-S2, E5-S1 implemented (resumed after interrupted run); gates 1-5 green; 235 backend + 31 frontend tests; coverage 100%; evaluator PASS on all API/Playwright/architecture checks.

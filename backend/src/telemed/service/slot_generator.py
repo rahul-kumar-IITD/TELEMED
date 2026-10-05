@@ -3,10 +3,13 @@ from collections.abc import Iterator
 from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
+from sqlalchemy.orm import Session
+
 from telemed.config.clock import Clock
 from telemed.repository import doctors_repo, slots_repo
 from telemed.repository.doctors_repo import TemplateRow
 from telemed.service.unit_of_work import UnitOfWork
+from telemed.types.ids import UserId
 
 WINDOW = timedelta(days=14)
 
@@ -52,12 +55,21 @@ class SlotGenerator:
     def generate(self) -> int:
         """Top up the rolling window for all active doctors; returns the number of new slots."""
         now = self._clock.now()
-        created = 0
         with self._uow.transaction() as session:
-            for template in doctors_repo.list_active_doctor_templates(session):
-                for start, end in expand_template(template, now, self._zone):
-                    if slots_repo.insert_available_if_absent(
-                        session, template.doctor_id, start, end, now
-                    ):
-                        created += 1
+            templates = doctors_repo.list_active_doctor_templates(session)
+            return self._insert(session, templates, now)
+
+    def generate_for(self, session: Session, doctor_id: UserId) -> int:
+        """Top up one doctor's window inside the caller's transaction (used by onboarding)."""
+        templates = doctors_repo.list_doctor_templates(session, doctor_id)
+        return self._insert(session, templates, self._clock.now())
+
+    def _insert(self, session: Session, templates: list[TemplateRow], now: datetime) -> int:
+        created = 0
+        for template in templates:
+            for start, end in expand_template(template, now, self._zone):
+                if slots_repo.insert_available_if_absent(
+                    session, template.doctor_id, start, end, now
+                ):
+                    created += 1
         return created

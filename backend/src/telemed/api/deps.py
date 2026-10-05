@@ -5,12 +5,14 @@ from fastapi import Depends, HTTPException, Request
 
 from telemed.service.auth_service import AuthService
 from telemed.service.container import Container
+from telemed.service.doctor_service import DoctorService
 from telemed.service.integrations.interfaces import (
     NotificationService,
     PaymentService,
     PrescriptionService,
     VideoService,
 )
+from telemed.service.profile_service import ProfileService
 from telemed.types import domain
 from telemed.types.enums import Role
 from telemed.types.errors import InvalidTokenError
@@ -23,6 +25,14 @@ def get_container(request: Request) -> Container:
 
 def get_auth_service(container: Container = Depends(get_container)) -> AuthService:
     return container.auth
+
+
+def get_profile_service(container: Container = Depends(get_container)) -> ProfileService:
+    return container.profiles
+
+
+def get_doctor_service(container: Container = Depends(get_container)) -> DoctorService:
+    return container.doctors
 
 
 def get_video_service(container: Container = Depends(get_container)) -> VideoService:

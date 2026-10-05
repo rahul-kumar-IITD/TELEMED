@@ -1,15 +1,37 @@
-# Evaluator Report - Group C (E1-S4, F017-F021, plus C-UR-1), mode local
+# Evaluator Report - Group D (E1-S5, E2-S2, E5-S1)
 
-Verdict: PASS (all checks). Evidence: live server on 127.0.0.1:8000 per start_command, raw sqlite3 edits, forged PyJWT tokens, pytest, live start-refusal runs.
+Verdict: PASS (all gating checks passed; no failures; no eval-failures JSON written)
 
-- Architecture: the 3 required files exist. Content rules verified: get_current_user re-reads the user via AuthService each request and returns 401 for any bad token (generic body); require_roles gives 403; access.py holds ownership; /api/auth/me exists in auth.py; deps.py has no sqlite or repository imports. The old dev secret appears only as _REFUSED_JWT_SECRET (denylist) in settings.py. It is absent from .env.example, where JWT_SECRET= is blank. jwt_secret has no fixed default, and the dev fallback uses secrets.token_urlsafe(48).
-- C-API-1a/1b/1c/1d: PASS live. Missing header, 'Bearer garbage', 'Bearer a.b.c', 'Basic xxx', empty bearer (via curl), expired, wrong-secret and alg=none all return 401 UNAUTHENTICATED with an identical generic body. Valid token returns 200 with the User shape and no password fields.
-- C-API-1e (19 passed), 2a (2), 3a (4), 3b (5), 4c (3), 5a (5), C-API-6 (68 passed incl. group B regression): PASS.
-- C-API-2b: PASS live. A forged ADMIN-claim token returns role PATIENT. After UPDATE role='DOCTOR' the same token returns DOCTOR.
-- C-API-4a/4b: PASS live. active=0 gives 401, active=1 gives 200 with the same token.
-- C-API-5b: PASS live. The admin row was inserted via sqlite3, login returned 200, and /me returned role ADMIN.
-- C-API-3c: N/A. Only /health, /api/auth/register, /login and /me exist as real routes (routers: auth, system), so there is no role-restricted real route. Covered by C-API-3a/3b pytest.
-- C-UR-1-a: PASS (10 selected; the whole test_settings.py has 15 passed).
-- C-UR-1-b: PASS live. APP_ENV=prod and staging with no JWT_SECRET exit 1 with "JWT_SECRET is required unless APP_ENV=dev". The old dev value under prod exits 1 and the output does not contain the value. A short secret under dev exits 1. In dev with no secret, two processes started and a token minted by process 1 returned 401 on process 2.
-- Notes (non-blocking): users column is `active` (not is_active) and has no full_name column. full_name in /me is null for the admin and DOCTOR rows, which have no profile. The API-05 shape expects a string, and this affects only users without a patient profile. The startup refusal surfaces as a raw pydantic traceback, which is clear and names JWT_SECRET. C-UR-1 has no features.json entry (feature null), so features.json was not modified.
-- Cleanup: servers stopped (ports 8000/8021/8022 closed), backend/eval-c.db, eval-c2.db and eval-c-server.log deleted.
+Contract: sprint-contracts/group-D.json (final, unmodified). Mode: local. Servers started via root `npm start` with DATABASE_PATH=./eval-d.db (start-backend.mjs defaults JWT_SECRET/APP_ENV=dev/PROVIDER_TIMEZONE=UTC). Health on :8000 and :5173 (proxy) returned 200 on first attempt. Admin inserted via sqlite3 with argon2 hash from backend security module. Evaluation instant was 2026-10-05T23:06Z (Monday, UTC); the first slot window still yielded Mondays 10-12 and 10-19, 12 slots as expected.
+
+## Architecture checks
+- All 21 files_must_exist present. files_must_not_exist (routers/doctors.py, routers/appointments.py) absent.
+- No UPDATE/DELETE on patient_profile_versions in backend/src; lint-imports: 2 contracts kept, 0 broken.
+- Router order: /me/profile routes before /{patient_id}/profile; admin router guarded by require_roles(ADMIN) at router level.
+- Only user_id/version_number logged in profile_service and doctor_service.
+- localStorage appears only in a comment in api/session.ts; fetch( only in api/client.ts; no hard-coded backend URL in frontend/src (only the Vite proxy target in vite.config.ts).
+
+## API checks
+- D-API-0 PASS: :8000 and :5173 /api/config -> {UTC, 14, 60}; :5173/health ok.
+- D-API-1a PASS; 1b PASS (no token/malformed, GET+PUT -> 401 UNAUTHENTICATED, no version rows added).
+- D-API-2a PASS (version +1, earlier rows byte-identical incl. hex, carried forward, changed_by=p1). 2b PASS (both triggers abort with "patient_profile_versions is append-only", data unchanged).
+- D-API-3 PASS. D-API-4a PASS (doctor+admin 403 on /me GET/PUT, invalid body still 403, counts unchanged). 4b PASS (404 bodies byte-identical for other patient, missing id, doctor id; own 200, doctor 403, admin 200).
+- D-API-5a PASS (1 selected, passed). 5b PASS: profile_updated lines carry user_id; 0 occurrences of unique names, phones, "Orig Name", initial_password in server log.
+- D-API-6a PASS (single-field updates, ages 1/130, all 16 invalid bodies -> 422 with errors[].field (empty body -> field "body"), no version rows, extra role ignored). 6b PASS (4 passed).
+- D-API-6c N/A (optional): PUT /api/admin/patients/{id}/profile returns 404, not mounted; does not fail group D.
+- D-API-7a PASS (201, doctor_id==user_id, DOCTOR/active/argon2, fee_minor 50000, 1 template, 12 AVAILABLE Monday slots, 6 per Monday 09:00-11:30, none past, no password fields). 7b PASS (500.50, 0.00, languages [en,hi], default full_name, two templates same weekday -> 16 slots).
+- D-API-8a PASS (401/401/403/403, invalid body order preserved, counts unchanged). 9a PASS (all 7 cases, field paths correct, no rows, email reusable after). 10a PASS (5 fee cases, no echo). 11 PASS (409 for same, upper, mixed case, existing patient email; counts unchanged).
+- D-API-12a PASS (login role DOCTOR, user_id==doctor_id; wrong password 401 INVALID_CREDENTIALS). 12b PASS. 12c PASS (1 passed). 13a PASS (1 passed). 13b PASS (235 passed, 1 skipped).
+
+## Playwright checks (Chromium, 1280x800 and 375x812)
+- D-PW-1 PASS (token only in sessionStorage key telemed.session; localStorage and cookies clean; survives reload; new context lands on /login).
+- D-PW-2 PASS (/doctors, /queue, /admin/users, each renders shell). 3a PASS. 3b PASS (4 wrong-role cases show Not allowed, URL unchanged). 3c PASS (unknown route; mocked 404 on /api/doctors/999 -> not-found page).
+- D-PW-4a PASS (mocked 401 clears session -> /login; login INVALID_CREDENTIALS stays on /login). 4b PASS (login 503 and protected 503 -> "try again", no technical detail, session kept).
+- D-PW-5a PASS (inline email-field duplicate message for same and different-case email, stays /register). 5b PASS (wrong password, unknown email, deactivated user -> identical message). 5c PASS (no horizontal scroll at 375 and 1280 on /login and /register, initial and error states; submit visible and enabled; screenshots saved in the scratchpad evald folder).
+- D-PW-6a PASS (login errors in role=alert/aria-live regions present in DOM beforehand; register 409 in #reg-email-error role=alert). 6b PASS (loading, empty, 500 and 503 error states visible via page.route on /api/doctors).
+- D-PW-7 PASS: vitest 4 files / 31 tests passed; tsc --noEmit exit 0.
+
+## Notes (non-failing)
+- Browser console "Failed to load resource" entries (401/404/409/500/503) occurred only for intentionally mocked or expected non-2xx responses (and placeholder routes /api/doctors etc. not yet implemented); no uncaught page errors.
+- Evaluator harness mistakes (admin timestamp format) were test setup, not application defects.
+- Cleanup: servers stopped, backend/eval-d.db and eval-d-server.log removed. Untracked, git-ignored backend/dev.db-shm/-wal (created 04:34, before this run's server) left untouched.

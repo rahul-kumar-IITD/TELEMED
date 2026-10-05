@@ -4,6 +4,7 @@ from decimal import Decimal
 
 _MINOR_FACTOR = Decimal(100)
 _FEE_PATTERN = re.compile(r"^\d+\.\d{2}$")
+_FEE_INPUT = re.compile(r"[0-9]{1,9}(\.[0-9]{1,2})?")
 
 
 def to_minor(amount: Decimal) -> int:
@@ -32,3 +33,15 @@ def fee_from_string(value: str) -> Decimal:
     if not _FEE_PATTERN.fullmatch(value):
         raise ValueError("fee must have exactly two decimal places")
     return Decimal(value)
+
+
+def parse_fee(value: str) -> Decimal:
+    """Parse a request fee: non-negative decimal, at most 2 decimal places (never a float)."""
+    if not _FEE_INPUT.fullmatch(value):
+        raise ValueError("fee must be a non-negative decimal with at most 2 decimal places")
+    return Decimal(value)
+
+
+def format_fee(amount: Decimal) -> str:
+    """Serialise a fee as a 2-decimal string such as "500.00"."""
+    return str(amount.quantize(Decimal("0.01")))

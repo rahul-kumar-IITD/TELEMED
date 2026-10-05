@@ -1,10 +1,12 @@
 """patient_profiles and append-only patient_profile_versions."""
 from datetime import datetime
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from telemed.repository.mappers import profile_version_to_domain
 from telemed.repository.models import PatientProfile, PatientProfileVersion
-from telemed.types.domain import ProfileData
+from telemed.types.domain import PatientProfileView, ProfileData
 from telemed.types.ids import UserId
 
 
@@ -29,3 +31,14 @@ def insert_version(
         )
     )
     session.flush()
+
+
+def latest_version(session: Session, patient_id: UserId) -> PatientProfileView | None:
+    """The current profile: the row with the highest version_number, or None."""
+    row = session.scalars(
+        select(PatientProfileVersion)
+        .where(PatientProfileVersion.patient_id == patient_id)
+        .order_by(PatientProfileVersion.version_number.desc())
+        .limit(1)
+    ).first()
+    return profile_version_to_domain(row) if row is not None else None

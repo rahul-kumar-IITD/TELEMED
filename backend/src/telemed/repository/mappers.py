@@ -3,10 +3,11 @@ import json
 
 from telemed.repository.models import Appointment as AppointmentRow
 from telemed.repository.models import DoctorProfile as DoctorProfileRow
+from telemed.repository.models import PatientProfileVersion as PatientProfileVersionRow
 from telemed.repository.models import Slot as SlotRow
 from telemed.repository.models import User as UserRow
 from telemed.types import domain
-from telemed.types.enums import AppointmentStatus, Role, SlotStatus
+from telemed.types.enums import AppointmentStatus, Gender, Role, SlotStatus
 from telemed.types.ids import AppointmentId, SlotId, UserId
 from telemed.types.money import from_minor
 
@@ -56,4 +57,15 @@ def appointment_to_domain(row: AppointmentRow) -> domain.Appointment:
         fee=from_minor(row.fee_minor),
         created_at=row.created_at,
         updated_at=row.updated_at,
+    )
+
+
+def profile_version_to_domain(row: PatientProfileVersionRow) -> domain.PatientProfileView:
+    return domain.PatientProfileView(
+        patient_id=UserId(row.patient_id),
+        version_number=row.version_number,
+        data=domain.ProfileData(
+            full_name=row.full_name, age=row.age, gender=Gender(row.gender), phone=row.phone
+        ),
+        updated_at=row.created_at,
     )
