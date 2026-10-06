@@ -15,6 +15,7 @@ from telemed.service.integrations.interfaces import (
     VideoService,
 )
 from telemed.service.lifecycle_service import LifecycleService
+from telemed.service.notes_service import NotesService
 from telemed.service.profile_service import ProfileService
 from telemed.service.reschedule_service import RescheduleService
 from telemed.service.user_admin_service import UserAdminService
@@ -56,6 +57,10 @@ def get_reschedule_service(container: Container = Depends(get_container)) -> Res
 
 def get_lifecycle_service(container: Container = Depends(get_container)) -> LifecycleService:
     return container.lifecycle
+
+
+def get_notes_service(container: Container = Depends(get_container)) -> NotesService:
+    return container.notes
 
 
 def get_user_admin_service(

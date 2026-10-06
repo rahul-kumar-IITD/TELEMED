@@ -21,6 +21,7 @@ from telemed.service.integrations.stubs import (
     StubVideoService,
 )
 from telemed.service.lifecycle_service import LifecycleService
+from telemed.service.notes_service import NotesService
 from telemed.service.profile_service import ProfileService
 from telemed.service.reschedule_service import RescheduleService
 from telemed.service.slot_generator import SlotGenerator
@@ -42,6 +43,7 @@ class Container:
     cancellation: CancellationService
     reschedule: RescheduleService
     lifecycle: LifecycleService
+    notes: NotesService
     user_admin: UserAdminService
     slot_generator: SlotGenerator
     video: VideoService
@@ -67,6 +69,7 @@ def build_container(runtime: Runtime, clock: Clock | None = None) -> Container:
         cancellation=cancellation,
         reschedule=RescheduleService(uow, the_clock),
         lifecycle=LifecycleService(uow, the_clock, cancellation, runtime.provider_timezone),
+        notes=NotesService(uow, the_clock),
         user_admin=UserAdminService(uow, the_clock),
         slot_generator=slot_generator,
         video=StubVideoService(runtime.video_base_url),

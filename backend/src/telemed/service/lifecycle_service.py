@@ -68,6 +68,15 @@ class LifecycleService:
                 raise NotFoundException()
             return build_view(session, found[0], found[1], found[2], actor, now, video)
 
+    def list_mine(
+        self, patient: domain.User, status: AppointmentStatus | None, video: VideoService
+    ) -> tuple[domain.AppointmentView, ...]:
+        """The patient's own appointments, ascending by start time."""
+        now = self._clock.now()
+        with self._uow.read() as session:
+            rows = appointments_repo.list_for_patient(session, patient.user_id, status)
+            return tuple(build_view(session, a, s, e, patient, now, video) for a, s, e in rows)
+
     def queue(
         self, doctor: domain.User, day: date | None, video: VideoService
     ) -> domain.DoctorQueue:

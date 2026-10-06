@@ -8,7 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from telemed.api.errors import register_error_handlers
 from telemed.api.middleware import RequestContextMiddleware
-from telemed.api.routers import admin, appointments, auth, doctors, patients, system
+from telemed.api.routers import admin, appointments, auth, doctors, notes, patients, system
 from telemed.service import bootstrap
 from telemed.service.container import Clock, Container, build_container
 
@@ -50,4 +50,5 @@ def create_app(clock: Clock | None = None) -> FastAPI:
     app.include_router(admin.router)
     app.include_router(doctors.router)
     app.include_router(appointments.router)
+    app.include_router(notes.router)
     return app

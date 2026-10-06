@@ -2,6 +2,7 @@
 import json
 
 from telemed.repository.models import Appointment as AppointmentRow
+from telemed.repository.models import ConsultationNote as ConsultationNoteRow
 from telemed.repository.models import DoctorProfile as DoctorProfileRow
 from telemed.repository.models import PatientProfileVersion as PatientProfileVersionRow
 from telemed.repository.models import Slot as SlotRow
@@ -68,4 +69,14 @@ def profile_version_to_domain(row: PatientProfileVersionRow) -> domain.PatientPr
             full_name=row.full_name, age=row.age, gender=Gender(row.gender), phone=row.phone
         ),
         updated_at=row.created_at,
+    )
+
+
+def note_to_domain(row: ConsultationNoteRow) -> domain.ConsultationNote:
+    return domain.ConsultationNote(
+        note_id=row.note_id,
+        appointment_id=AppointmentId(row.appointment_id),
+        author_id=UserId(row.author_id),
+        text=row.text,
+        created_at=row.created_at,
     )

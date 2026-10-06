@@ -14,6 +14,7 @@ from telemed.api.deps import (
 from telemed.api.schemas.appointments import (
     AppointmentOut,
     BookRequest,
+    MyAppointmentsResponse,
     RescheduleRequest,
     StatusRequest,
 )
@@ -23,7 +24,7 @@ from telemed.service.integrations.interfaces import PaymentService, VideoService
 from telemed.service.lifecycle_service import LifecycleService
 from telemed.service.reschedule_service import RescheduleService
 from telemed.types import domain
-from telemed.types.enums import Role
+from telemed.types.enums import AppointmentStatus, Role
 from telemed.types.ids import AppointmentId, SlotId
 
 router = APIRouter(prefix="/api/appointments")
@@ -42,6 +43,16 @@ def book_appointment(
     video: VideoService = Depends(get_video_service),
 ) -> AppointmentOut:
     return AppointmentOut.from_domain(service.book(user, SlotId(body.slot_id), payment, video))
+
+
+@router.get("/mine")
+def my_appointments(
+    status: AppointmentStatus | None = None,
+    user: domain.User = Depends(_patient_only),
+    service: LifecycleService = Depends(get_lifecycle_service),
+    video: VideoService = Depends(get_video_service),
+) -> MyAppointmentsResponse:
+    return MyAppointmentsResponse.from_domain(service.list_mine(user, status, video))
 
 
 @router.post("/{appointment_id}/cancel")

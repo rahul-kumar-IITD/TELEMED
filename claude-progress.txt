@@ -138,3 +138,19 @@ learned_rules: 0
 blocked_stories: none
 notes: E3-S4 reschedule, E3-S5 lifecycle+queue, E5-S5 admin UI. Added GET /api/appointments/{id} (API-23). UX note: admin user list not refetched after profile save.
 next_action: Run /auto --mode lean --group I (propose sprint contract for group I)
+
+=== Session 9 ===
+date: 2026-10-06
+mode: lean
+groups_completed: [A, B, C, D, E, F, G, H, I]
+groups_remaining: [J, K]
+current_group: J (not started)
+current_stories: []
+sprint_contract: sprint-contracts/group-I.json (group I complete, evaluator PASS)
+last_commit: see git log "feat: implement group I"
+features_passing: 114 / 136
+coverage: 100%
+learned_rules: 0
+blocked_stories: none
+notes: E4-S1 consultation notes (append-only, 405 Allow: GET), E4-S3 GET /api/appointments/mine. Generator wrote source before tests (TDD caveat).
+next_action: Run /auto --mode lean --group J (propose sprint contract for group J)

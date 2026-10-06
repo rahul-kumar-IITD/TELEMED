@@ -74,3 +74,12 @@ class QueueResponse(BaseModel):
             date=queue.date, timezone=queue.timezone,
             items=[AppointmentOut.from_domain(v) for v in queue.items], total=len(queue.items),
         )
+
+
+class MyAppointmentsResponse(BaseModel):
+    items: list[AppointmentOut]
+    total: int
+
+    @classmethod
+    def from_domain(cls, views: tuple[domain.AppointmentView, ...]) -> "MyAppointmentsResponse":
+        return cls(items=[AppointmentOut.from_domain(v) for v in views], total=len(views))

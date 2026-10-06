@@ -96,3 +96,18 @@ def list_for_doctor_between(
         .order_by(Slot.start_time, Appointment.appointment_id)
     ).all()
     return [(appointment_to_domain(r[0]), r[1], r[2]) for r in rows]
+
+
+def list_for_patient(
+    session: Session, patient_id: UserId, status: AppointmentStatus | None
+) -> list[tuple[domain.Appointment, datetime, datetime]]:
+    """The patient's appointments (optionally one status) with slot times, by start."""
+    stmt = (
+        select(Appointment, Slot.start_time, Slot.end_time)
+        .join(Slot, Slot.slot_id == Appointment.slot_id)
+        .where(Appointment.patient_id == patient_id)
+        .order_by(Slot.start_time, Appointment.appointment_id)
+    )
+    if status is not None:
+        stmt = stmt.where(Appointment.status == status.value)
+    return [(appointment_to_domain(r[0]), r[1], r[2]) for r in session.execute(stmt).all()]

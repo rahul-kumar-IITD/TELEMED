@@ -196,3 +196,14 @@ class DoctorQueue:
     date: str  # YYYY-MM-DD
     timezone: str
     items: tuple[AppointmentView, ...]
+
+
+@dataclass(frozen=True)
+class ConsultationNote:
+    """One append-only note written by the appointment's doctor."""
+
+    note_id: int
+    appointment_id: AppointmentId
+    author_id: UserId
+    text: str
+    created_at: datetime
