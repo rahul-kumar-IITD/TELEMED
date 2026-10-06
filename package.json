@@ -1,0 +1,13 @@
+{
+  "name": "telemed",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "start": "concurrently -k -n api,web -c blue,green \"node scripts/start-backend.mjs\" \"npm --prefix frontend run dev\"",
+    "e2e": "npx playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "concurrently": "^9.0.0"
+  }
+}

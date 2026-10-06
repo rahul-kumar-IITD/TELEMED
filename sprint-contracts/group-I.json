@@ -1,0 +1,240 @@
+{
+  "group": "I",
+  "stories": [
+    "E4-S1",
+    "E4-S3"
+  ],
+  "features": [
+    "F077",
+    "F078",
+    "F079",
+    "F080",
+    "F081",
+    "F082",
+    "F089",
+    "F090",
+    "F091",
+    "F092"
+  ],
+  "mode": "lean",
+  "verification_mode": "local",
+  "contract_status": "final (evaluator-reviewed)",
+  "start_command": "cd backend && export DATABASE_PATH=./eval-i.db JWT_SECRET=eval-secret-at-least-32-bytes-long-0123456789 PROVIDER_TIMEZONE=Asia/Kolkata APP_ENV=dev && rm -f eval-i.db && uv run alembic upgrade head && uv run uvicorn telemed.api.app:create_app --factory --host 127.0.0.1 --port 8000 > ../eval-i-server.log 2>&1",
+  "start_note": "API-only group: backend :8000 only, no frontend needed. Setup as in groups G/H (sqlite3 admin insert with argon2 hash, POST /api/admin/doctors for doctors A and B with several slots each, register patients P1..P2, book via POST /api/appointments). COMPLETED appointments are reached through the real doctor flow POST /api/appointments/{id}/status (BOOKED -> CHECKED_IN -> IN_PROGRESS -> COMPLETED). Time-dependent states (60:00 boundary, terminal statuses for join_url) are arranged by sqlite3 UPDATE of slots.start_time/end_time and appointments.status with safe margins; the exact 60:00 / 60:01-boundary (F091) is verified by pytest with the injected clock (backend/tests/integration/test_my_appointments.py). Log checks (F082) read ../eval-i-server.log (structured JSON) for a unique marker posted in a note; the pytest log-capture test must also exist and pass. Group I is API-only; the frontend (E5-S3 notes/my-appointments UI) is out of scope.",
+  "backend_url": "http://localhost:8000",
+  "frontend_url": null,
+  "api_checks": [
+    {
+      "id": "I-API-0",
+      "story": "E4-S1",
+      "ac": "prerequisite",
+      "feature": "F077",
+      "note": "setup/regression: GET /health 200; admin login; onboard doctors A and B; register patients P1, P2, P3; book appointments (P1 with doctor A, P2 with doctor B or A). Failure blocks the group.",
+      "method": "GET",
+      "path": "/health",
+      "auth": "none",
+      "expect_status": 200
+    },
+    {
+      "id": "I-API-1",
+      "story": "E4-S1",
+      "ac": 1,
+      "feature": "F077",
+      "note": "drive P1's appointment to COMPLETED via doctor A's POST status (CHECKED_IN, IN_PROGRESS, COMPLETED). doctor A POST notes {text:'note one'} -> 201 ConsultationNote (note_id, appointment_id, author_id, text, created_at); POST a second note -> 201 with a larger note_id; GET notes -> items in ascending note_id, total 2; sqlite3: 2 rows in consultation_notes for the appointment.",
+      "method": "POST",
+      "path": "/api/appointments/{id}/notes",
+      "auth": "doctor owner",
+      "expect_status": 201,
+      "expect_body_fields": {
+        "note_id": "int",
+        "appointment_id": "unchanged",
+        "author_id": "int",
+        "text": "as posted",
+        "created_at": "datetime"
+      }
+    },
+    {
+      "id": "I-API-2",
+      "story": "E4-S1",
+      "ac": 2,
+      "feature": "F078",
+      "note": "POST note on appointments in each non-COMPLETED status (BOOKED, CHECKED_IN, IN_PROGRESS, CANCELLED, NO_SHOW via sqlite3) as the owning doctor -> 409 INVALID_APPOINTMENT_STATE; sqlite3: no row added. Then on a COMPLETED appointment of doctor A: doctor B -> 404, patient (owner) -> 403, admin -> 403, no token -> 401; no row added in any case. Also: POST note on a nonexistent appointment id as a doctor -> 404 (API-27); non-COMPLETED status with patient token -> 403 (story AC2). [judgement call decided: code INVALID_APPOINTMENT_STATE KEPT, mandated by API-27 and error table (409 'note on non-COMPLETED')]",
+      "method": "POST",
+      "path": "/api/appointments/{id}/notes",
+      "auth": "doctor owner / other doctor / patient / admin / none",
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "INVALID_APPOINTMENT_STATE"
+      }
+    },
+    {
+      "id": "I-API-3",
+      "story": "E4-S1",
+      "ac": 3,
+      "feature": "F079",
+      "note": "text of exactly 5000 characters -> 201 and round-trips unchanged; 5001 characters -> 422; empty string -> 422; whitespace-only -> 422 (api-contracts API-27); missing text / non-string -> 422; multi-byte text of 5000 Unicode characters accepted (characters, not bytes). sqlite3: only the accepted notes stored. [judgement call decided: whitespace-only 422 KEPT, traceable to api-contracts API-27 'whitespace-only is rejected as empty']",
+      "method": "POST",
+      "path": "/api/appointments/{id}/notes",
+      "auth": "doctor owner",
+      "expect_status": 422,
+      "expect_body_fields": {
+        "code": "VALIDATION_ERROR"
+      }
+    },
+    {
+      "id": "I-API-4",
+      "story": "E4-S1",
+      "ac": 4,
+      "feature": "F080",
+      "note": "PUT, PATCH, DELETE on /api/appointments/{id}/notes/{note_id} (as doctor owner) -> 405 with Allow containing GET (code METHOD_NOT_ALLOWED); sqlite3: row unchanged. Raw sqlite3 'UPDATE consultation_notes SET text=...' and 'DELETE FROM consultation_notes' each fail with 'consultation_notes is append-only' and the row is unchanged. pytest backend/tests/concurrency/test_notes_immutable.py exists, is not skipped, and passes.",
+      "method": "PUT",
+      "path": "/api/appointments/{id}/notes/{note_id}",
+      "auth": "doctor owner",
+      "expect_status": 405,
+      "expect_body_fields": {
+        "code": "METHOD_NOT_ALLOWED"
+      }
+    },
+    {
+      "id": "I-API-5",
+      "story": "E4-S1",
+      "ac": 5,
+      "feature": "F081",
+      "note": "on the COMPLETED appointment with notes: GET notes as P1 (owner), doctor A, admin -> 200 with items/total; GET notes/{note_id} as the same three -> 200 ConsultationNote; as P2 (other patient) and doctor B -> 404 for both list and single; nonexistent appointment -> 404; note_id belonging to another appointment -> 404; no token -> 401. GET notes on an appointment with no notes -> 200, items [], total 0.",
+      "method": "GET",
+      "path": "/api/appointments/{id}/notes",
+      "auth": "patient owner / doctor owner / admin",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "items": "list of ConsultationNote ascending note_id",
+        "total": "int"
+      }
+    },
+    {
+      "id": "I-API-6",
+      "story": "E4-S1",
+      "ac": 6,
+      "feature": "F082",
+      "note": "POST a note whose text contains a unique marker (e.g. PHIMARKER-<uuid>) as doctor A; read ../eval-i-server.log: at least one structured line carries the appointment_id (and user_id) for the POST and the marker string appears in NO log line (including the request-body / error / access paths). Also POST a 422 (5001 chars with the marker) and confirm the marker is not logged. pytest backend/tests/integration/test_notes.py log-capture test exists, is not skipped, and passes.",
+      "method": "POST",
+      "path": "/api/appointments/{id}/notes",
+      "auth": "doctor owner",
+      "expect_status": 201
+    },
+    {
+      "id": "I-API-7",
+      "story": "E4-S3",
+      "ac": 1,
+      "feature": "F089",
+      "note": "P1 and P2 each book 2+ appointments (create out of start order: book later slot first). GET mine as P1 -> only P1's items (no P2 appointment_id), ascending start_time, total == len(items); every item has status, fee as a decimal string (e.g. '500.00', not a number), doctor name (doctor.full_name non-empty), allowed_actions list. Optional ?status=CANCELLED filter returns only that status; invalid status value -> 422. Patient with no appointments -> 200 items [] total 0. Doctor token -> 403, admin -> 403, no token -> 401. Route must not be shadowed by /{appointment_id}: /api/appointments/mine returns 200 (not 422). [judgement call decided: ?status= filter KEPT, documented in API-22; invalid enum -> 422 is the standard validation envelope]",
+      "method": "GET",
+      "path": "/api/appointments/mine",
+      "auth": "patient",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "items": "list of Appointment (caller's only, ascending start_time)",
+        "total": "int"
+      }
+    },
+    {
+      "id": "I-API-8",
+      "story": "E4-S3",
+      "ac": 2,
+      "feature": "F090",
+      "note": "REGRESSION/EXTENSION of existing API-23 (already implemented; GET /api/appointments/{id} exists in routers/appointments.py via LifecycleService.get). Verify with P1's appointment: P1 -> 200; P2 -> 404; doctor A (its doctor) -> 200; doctor B -> 404; admin -> 200 with allowed_actions [] and join_url null; nonexistent id -> 404; no token -> 401. Nothing new to build if all hold; add missing tests only (test_my_appointments.py) and fix any gaps found.",
+      "method": "GET",
+      "path": "/api/appointments/{id}",
+      "auth": "patient owner / other patient / doctor owner / other doctor / admin",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "appointment_id": "requested id",
+        "doctor": "{doctor_id, full_name, specialty}",
+        "patient": "{patient_id, full_name}",
+        "fee": "string"
+      }
+    },
+    {
+      "id": "I-API-9",
+      "story": "E4-S3",
+      "ac": 3,
+      "feature": "F091",
+      "note": "live (margins): BOOKED appointment with start ~ now+90m -> patient GET (and mine item) allowed_actions == ['CANCEL','RESCHEDULE'] and change_deadline == start_time - 60 min; sqlite3 move start to now+30m -> allowed_actions == [] for the patient; a non-BOOKED appointment (e.g. CANCELLED) shows no CANCEL/RESCHEDULE for the patient. Exact boundary: pytest test_my_appointments.py with injected clock books a slot at now+60:00 -> both actions present; clock +1s -> both absent. Evaluator confirms that test exists, is not skipped and passes.",
+      "method": "GET",
+      "path": "/api/appointments/mine",
+      "auth": "patient",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "allowed_actions": "['CANCEL','RESCHEDULE'] iff start - now >= 60:00 and BOOKED, else []"
+      }
+    },
+    {
+      "id": "I-API-10",
+      "story": "E4-S3",
+      "ac": 4,
+      "feature": "F092",
+      "note": "arrange six appointments (sqlite3 status updates; BOOKED, CHECKED_IN, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW). For P1 via GET /api/appointments/{id} and GET mine, and for the doctor via GET /{id}: join_url is a non-empty string (video stub URL containing the appointment id) for BOOKED/CHECKED_IN/IN_PROGRESS and null for COMPLETED/CANCELLED/NO_SHOW. Admin GET always null. Booking response (POST /api/appointments) also returns join_url set.",
+      "method": "GET",
+      "path": "/api/appointments/{id}",
+      "auth": "patient owner / doctor owner / admin",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "join_url": "non-null for BOOKED/CHECKED_IN/IN_PROGRESS (patient, doctor); null otherwise and always null for admin"
+      }
+    },
+    {
+      "id": "I-API-11",
+      "story": "E4-S1",
+      "ac": "1-6 (tests)",
+      "feature": "F077",
+      "note": "pytest backend/tests/integration/test_notes.py and backend/tests/concurrency/test_notes_immutable.py run, are not skipped, and pass (all six E4-S1 ACs covered).",
+      "method": "n/a (pytest)",
+      "path": "backend/tests/integration/test_notes.py",
+      "auth": "n/a",
+      "expect_status": "pytest exit 0"
+    },
+    {
+      "id": "I-API-12",
+      "story": "E4-S3",
+      "ac": "1-4 (tests)",
+      "feature": "F089",
+      "note": "pytest backend/tests/integration/test_my_appointments.py runs, is not skipped, and passes (all four E4-S3 ACs covered incl. injected-clock 60:00 boundary and six-status join_url matrix).",
+      "method": "n/a (pytest)",
+      "path": "backend/tests/integration/test_my_appointments.py",
+      "auth": "n/a",
+      "expect_status": "pytest exit 0"
+    }
+  ],
+  "playwright_checks": [],
+  "design_checks": [],
+  "architecture_checks": {
+    "files_must_exist": [
+      "backend/src/telemed/service/notes_service.py",
+      "backend/src/telemed/repository/notes_repo.py",
+      "backend/src/telemed/api/schemas/notes.py",
+      "backend/src/telemed/api/routers/notes.py",
+      "backend/tests/integration/test_notes.py",
+      "backend/tests/concurrency/test_notes_immutable.py",
+      "backend/tests/integration/test_my_appointments.py"
+    ],
+    "files_must_not_exist": [],
+    "content_rules": [
+      "E4-S1: notes router registered in the app; POST guarded by require_roles(DOCTOR) (patient/admin 403); GET list and single usable by PATIENT/DOCTOR/ADMIN with ownership via service/access.py ensure_can_read (other patient/other doctor and missing -> 404); no SQL in the router; layering Types -> Config -> Repository -> Service -> API respected (uv run lint-imports passes)",
+      "E4-S1: notes_service enforces status == COMPLETED (InvalidAppointmentStateException -> 409 INVALID_APPOINTMENT_STATE) and the appointment's own doctor; notes_repo exposes insert and read only (no update/delete function); PUT/PATCH/DELETE on /notes/{note_id} return 405 METHOD_NOT_ALLOWED with Allow: GET; DB triggers trg_cn_no_update/trg_cn_no_delete remain in the migration and are not bypassed",
+      "E4-S1: text validated 1..5000 Unicode characters with whitespace-only rejected (Pydantic schema), 422 via the standard error envelope; created_at from the injected clock",
+      "E4-S1: logging records only appointment_id and user_id for note posts; the note text, request body and exception messages never reach any logger (no PHI in logs); no print/console output",
+      "E4-S3: GET /api/appointments/mine declared BEFORE /{appointment_id} in routers/appointments.py and guarded by require_roles(PATIENT); returns {items,total} filtered by caller and ordered by start_time ascending, optional status enum filter; items built with the existing appointment_views.build_view (no duplicated allowed_actions/join_url logic in the router)",
+      "E4-S3: allowed_actions and join_url continue to be computed in service/allowed_actions.py and appointment_views.py (join_url from VideoService stub only for non-admin callers in BOOKED/CHECKED_IN/IN_PROGRESS) using the injected clock; fee serialised as a string (no float); no new GET /{id} implementation (API-23 already exists) - only tests/fixes",
+      "Project rules: mypy --strict and ruff clean on new code; functions < 50 lines, files < 300 lines; test-first commits; no decimal/float money"
+    ]
+  },
+  "review_notes": [
+    "Proposed by generator (lean); pending evaluator review. Derived from stories E4-S1 and E4-S3, api-contracts API-22, 23, 27, 28, 29 and the Appointment/ConsultationNote shapes, component-map rows E4-S1/E4-S3, and features F077-F082, F089-F092 (F083+ belong to other groups).",
+    "Existing-code finding (E4-S3): GET /api/appointments/{id} (API-23) already exists (routers/appointments.py -> LifecycleService.get) and build_view already computes allowed_actions and join_url (None for ADMIN and for non-live statuses). AC2 (F090) and AC4 (F092) therefore need verification and missing tests, not new implementation; the main new code for E4-S3 is GET /api/appointments/mine (AC1/F089) with the route ordered before /{appointment_id}. AC3 (F091) is satisfied by the existing allowed_actions matrix and needs the injected-clock 60:00 test in test_my_appointments.py.",
+    "Existing-code finding (E4-S1): consultation_notes table, CHECK constraint (1..5000, non-blank) and append-only triggers already exist in alembic 0001; ConsultationNote ORM/domain types may exist but there is no notes service, repo, schema or router yet (all E4-S1 files_must_exist are new). The repo has a generic 405 handler in api/errors.py; the 405 for PUT/PATCH/DELETE on /notes/{note_id} needs the Allow: GET header, so routes for those methods may need explicit handlers if the framework default omits Allow.",
+    "Story E4-S1 AC2 says 409 for non-COMPLETED; the API contract error code is INVALID_APPOINTMENT_STATE (same as group H). Whitespace-only text -> 422 comes from api-contracts API-27 rather than the story text (story only says 'empty').",
+    "Brief says note creation by admin is 403 (API-27 doctor-only) while reading is allowed for admin (API-28/29).",
+    "Exact 60:00 boundary (F091) and the log-capture check (F082) are most reliably verified by pytest with the injected clock / caplog; live checks use sqlite3 margins and the server log file as a supplement.",
+    "Out of scope: frontend notes/my-appointments UI (E5-S3), doctor note form (E5-S4), E4-S2 (profile) and any feature F083-F088/F093+.",
+    "Evaluator review: all three flagged judgement calls kept (each traced to api-contracts.md API-27, API-22, error table row 409). Removed untraceable items: doctor full_name email-local-part fallback (I-API-7) and doctor-side CHECKED_IN/CANCEL vocabulary assertion (I-API-9). Added to I-API-2: 404 for nonexistent appointment and patient 403 on non-COMPLETED. Unverifiable-by-story detail retained as supplementary: note_id of another appointment -> 404 (API-29 scoping)."
+  ]
+}

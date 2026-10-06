@@ -1,0 +1,339 @@
+{
+  "group": "J",
+  "stories": [
+    "E5-S3",
+    "E5-S4",
+    "E6-S2"
+  ],
+  "features": [
+    "F104",
+    "F105",
+    "F106",
+    "F107",
+    "F108",
+    "F109",
+    "F110",
+    "F111",
+    "F112",
+    "F113",
+    "F114",
+    "F115",
+    "F124",
+    "F125",
+    "F126",
+    "F127",
+    "F136"
+  ],
+  "mode": "lean",
+  "verification_mode": "local",
+  "contract_status": "final (evaluator-reviewed)",
+  "start_command": "cd backend && export DATABASE_PATH=./eval-j.db JWT_SECRET=eval-secret-at-least-32-bytes-long-0123456789 PROVIDER_TIMEZONE=Asia/Kolkata APP_ENV=dev && rm -f eval-j.db && uv run alembic upgrade head && uv run uvicorn telemed.api.app:create_app --factory --host 127.0.0.1 --port 8000 > ../eval-j-server.log 2>&1",
+  "frontend_start_command": "cd frontend && npm run dev -- --host 127.0.0.1 --port 5173 > ../eval-j-frontend.log 2>&1",
+  "start_note": "Backend :8000 and Vite :5173 (proxies /api to 127.0.0.1:8000). Setup as in groups G/H/I (sqlite3 admin insert with argon2 hash, POST /api/admin/doctors for doctors A and B with several slots, register patients P1..P2, book via POST /api/appointments). Time-dependent and status states (inside/outside the 60 min window, CHECKED_IN/IN_PROGRESS/COMPLETED/CANCELLED/NO_SHOW, notes) are arranged by sqlite3 UPDATE of slots/appointments with safe margins or via the real doctor flow. 409 UI states use Playwright route interception where the real condition is hard to reproduce. E6-S2 checks are CLI-only (no servers needed); negative scratch checks are done in a temporary copy of the repo and violations are never committed. Frontend gates: cd frontend && npm test (change-window, appointment-card, allowed-actions unit tests), npm run lint, npm run typecheck must pass.",
+  "backend_url": "http://localhost:8000",
+  "frontend_url": "http://localhost:5173",
+  "api_checks": [
+    {
+      "id": "J-API-0",
+      "story": "E5-S3",
+      "ac": "prerequisite",
+      "feature": "F104",
+      "note": "setup/regression: GET /health 200; admin login; onboard doctors A and B (several slots each); register patients P1, P2; book appointments; doctor A drives one of P1's appointments to COMPLETED and posts two notes. Failure blocks the group.",
+      "method": "GET",
+      "path": "/health",
+      "auth": "none",
+      "expect_status": 200
+    },
+    {
+      "id": "J-API-1",
+      "story": "E5-S3",
+      "ac": "1-4 (backend dependencies)",
+      "feature": "F104",
+      "note": "Regression of UI-facing shapes (API-22/24/25): GET /api/appointments/mine as P1 -> items with status, allowed_actions, join_url, change_deadline, fee as string, ascending start_time; POST cancel (API-24) -> 200 CANCELLED; POST reschedule {new_slot_id} to another AVAILABLE slot of the same doctor (API-25) -> 200 with new start_time; reschedule to another doctor's slot or the same slot -> 409 SLOT_UNAVAILABLE; cancel or reschedule inside 60 min (sqlite3 slot margin, e.g. 59 min) -> 409 CHANGE_WINDOW_CLOSED; cancel at >= 90 min margin succeeds. Confirms UI-facing shapes only.",
+      "method": "GET",
+      "path": "/api/appointments/mine",
+      "auth": "patient",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "items": "list of Appointment",
+        "total": "int"
+      }
+    },
+    {
+      "id": "J-API-2",
+      "story": "E5-S3",
+      "ac": 5,
+      "feature": "F108",
+      "note": "GET /api/appointments/{id}/notes as P1 on the COMPLETED appointment (API-28) -> 200 with two notes ascending note_id; PUT/PATCH/DELETE on /api/appointments/{id}/notes/{note_id} (API-29) -> 405 METHOD_NOT_ALLOWED with Allow: GET (no edit/delete exists server-side, so the UI must not offer them); another patient's GET -> 404.",
+      "method": "GET",
+      "path": "/api/appointments/{id}/notes",
+      "auth": "patient owner",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "items": "list of ConsultationNote ascending note_id",
+        "total": 2
+      }
+    },
+    {
+      "id": "J-API-3",
+      "story": "E5-S3",
+      "ac": 6,
+      "feature": "F109",
+      "note": "GET /api/patients/me/profile as P1 -> 200 (API-06); PUT with changed phone -> 200 returning the new phone (API-07); GET again -> new phone persists; PUT with age 0 -> 422 (backs the field-error UI check).",
+      "method": "PUT",
+      "path": "/api/patients/me/profile",
+      "auth": "patient",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "phone": "as submitted"
+      }
+    },
+    {
+      "id": "J-API-4",
+      "story": "E5-S4",
+      "ac": "1-3 (backend dependencies)",
+      "feature": "F110",
+      "note": "Regression (API-15, API-02, API-26): GET /api/doctors/me/queue?date=YYYY-MM-DD as doctor A -> 200 body {date, timezone, items, total}. The provider timezone label field is 'timezone' (IANA name, e.g. 'Asia/Kolkata'), NOT 'provider_timezone'; 'provider_timezone' is the field of GET /api/config (API-02), which must also return 'Asia/Kolkata' for this start_command. Items ascending by start_time, each with allowed_actions; BOOKED row allowed_actions includes CHECKED_IN. The UI shows the label derived from this server value (no hard-coded zone). POST /api/appointments/{id}/status CHECKED_IN -> 200; invalid transition -> 409 INVALID_APPOINTMENT_STATE (status unchanged); NO_SHOW before start -> 409 INVALID_APPOINTMENT_STATE; bad date -> 422.",
+      "method": "GET",
+      "path": "/api/doctors/me/queue",
+      "auth": "doctor",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "date": "YYYY-MM-DD",
+        "timezone": "IANA name, Asia/Kolkata",
+        "items": "list of Appointment with allowed_actions",
+        "total": "int"
+      }
+    },
+    {
+      "id": "J-API-5",
+      "story": "E5-S4",
+      "ac": 4,
+      "feature": "F113",
+      "note": "GET /api/doctors/me/slots as doctor A (API-12); PUT .../block (API-13) on AVAILABLE slot -> 200 BLOCKED; PUT .../unblock (API-14) -> 200 AVAILABLE; block on a BOOKED slot -> 409 (UI disables the control, server stays authoritative); unblock on a non-BLOCKED slot -> 409 INVALID_SLOT_STATE.",
+      "method": "PUT",
+      "path": "/api/doctors/me/slots/{slot_id}/block",
+      "auth": "doctor",
+      "expect_status": 200
+    },
+    {
+      "id": "J-API-6",
+      "story": "E5-S4",
+      "ac": 5,
+      "feature": "F114",
+      "note": "POST note on a BOOKED appointment as doctor A (API-27) -> 409 INVALID_APPOINTMENT_STATE; on COMPLETED -> 201; GET notes lists it (API-28); PUT/PATCH/DELETE on /api/appointments/{id}/notes/{note_id} -> 405 (API-29).",
+      "method": "POST",
+      "path": "/api/appointments/{id}/notes",
+      "auth": "doctor owner",
+      "expect_status": 201
+    },
+    {
+      "id": "J-API-7",
+      "story": "E6-S2",
+      "ac": 1,
+      "feature": "F124",
+      "note": "cd backend && uv run pytest --cov on the full suite -> exit 0. pyproject.toml [tool.coverage.report] has fail_under = 80 and a separate enforced domain-layer threshold of 95 (coverage.py has one fail_under, so a second report/step or script is needed for the domain package). Scratch copy with a skipped test module (or --cov-fail-under=100) -> non-zero exit, and the domain gate fails when domain coverage < 95.",
+      "method": "n/a (CLI)",
+      "path": "uv run pytest --cov",
+      "auth": "n/a",
+      "expect_status": "exit 0 on full suite; non-zero when below threshold"
+    },
+    {
+      "id": "J-API-8",
+      "story": "E6-S2",
+      "ac": "2,5",
+      "feature": "F125",
+      "note": "python scripts/check_traceability.py (backend: uv run) lists AC-01..AC-10 and NFR-01..NFR-08, each with test count >= 1 (pytest ac/nfr markers, vitest/Playwright titles containing the ID), exits 0. Scratch copy with one AC tag removed, then one NFR tag removed -> non-zero exit naming the missing id (F136 for NFR). backend/tests/architecture/test_traceability.py exists, is not skipped, passes.",
+      "method": "n/a (CLI)",
+      "path": "scripts/check_traceability.py",
+      "auth": "n/a",
+      "expect_status": "exit 0 when complete; non-zero when any tag missing"
+    },
+    {
+      "id": "J-API-9",
+      "story": "E6-S2",
+      "ac": 3,
+      "feature": "F126",
+      "note": "cd backend && uv run lint-imports exits 0 on the repo. Scratch copy where a repository module imports a service module -> broken contract reported, non-zero exit (a dedicated forbidden contract Repository -> Service must exist or the layers contract must demonstrably catch it). backend/tests/architecture/test_layers.py exists, is not skipped, passes and asserts the violation case.",
+      "method": "n/a (CLI)",
+      "path": "uv run lint-imports",
+      "auth": "n/a",
+      "expect_status": "exit 0 on repo; non-zero on violation"
+    },
+    {
+      "id": "J-API-10",
+      "story": "E6-S2",
+      "ac": 4,
+      "feature": "F127",
+      "note": "cd backend && uv run mypy --strict src/ prints Success with zero errors; uv run ruff check . exits 0.",
+      "method": "n/a (CLI)",
+      "path": "uv run mypy --strict src/ ; uv run ruff check .",
+      "auth": "n/a",
+      "expect_status": "exit 0 for both"
+    },
+    {
+      "id": "J-API-11",
+      "story": "E6-S2",
+      "ac": "1-5 (full suite)",
+      "feature": "F136",
+      "note": "Full backend suite uv run pytest -x -q is green with no skipped architecture/traceability tests; every NFR-01..NFR-08 has a tagged test; .github/workflows/ci.yml runs pytest --cov, lint-imports, mypy --strict, ruff and the traceability script.",
+      "method": "n/a (CLI)",
+      "path": "uv run pytest -x -q",
+      "auth": "n/a",
+      "expect_status": "exit 0"
+    },
+    {
+      "id": "J-API-12",
+      "story": "E5-S4",
+      "ac": "1-2 (role guard)",
+      "feature": "F110",
+      "note": "GET /api/doctors/me/queue as patient -> 403; without token -> 401; POST /api/appointments/{id}/status as doctor B (not the appointment's doctor) -> 404.",
+      "method": "GET",
+      "path": "/api/doctors/me/queue",
+      "auth": "patient / none",
+      "expect_status": "403 / 401"
+    },
+    {
+      "id": "J-API-13",
+      "story": "E5-S4",
+      "ac": 3,
+      "feature": "F112",
+      "note": "Status POST on an appointment already CHECKED_IN with CHECKED_IN again -> 409 INVALID_APPOINTMENT_STATE; a follow-up GET queue returns the unchanged status (the data the UI refetches).",
+      "method": "POST",
+      "path": "/api/appointments/{id}/status",
+      "auth": "doctor owner",
+      "expect_status": 409
+    }
+  ],
+  "playwright_checks": [
+    {
+      "id": "J-PW-S3-1280",
+      "story": "E5-S3",
+      "features": [
+        "F104",
+        "F105",
+        "F106",
+        "F107",
+        "F108",
+        "F109"
+      ],
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "start_url": "http://localhost:5173/login",
+      "steps": [
+        "log in as patient P1; reach My appointments via in-app navigation (route path not fixed by spec)",
+        "F104: with six appointments in BOOKED, CHECKED_IN, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW (arranged via sqlite3), each card shows the status as text; 'Join video visit' is present on exactly the first three and absent on the last three",
+        "F105: appointment starting in ~59 min (sqlite3 margin): Cancel and Reschedule disabled with a visible explanation mentioning 60 minutes; appointment starting well beyond 60 min (>= 90 min for margin): both enabled",
+        "F106: click Cancel, Confirm -> card shows CANCELLED; for 409 use Playwright route interception (or move the start inside the window after page load) -> inline message shown, status unchanged",
+        "F107: click Reschedule on an eligible card, pick another open slot of the same doctor (only that doctor's slots listed), confirm -> card shows the new time; GET /api/appointments/{id} agrees",
+        "F108: open the consultation notes view for the COMPLETED appointment with two notes -> both texts displayed; no edit/delete buttons and no textarea/input in the notes view",
+        "F109: open profile, change phone, submit -> success message visible; reload the page -> new phone value displayed; invalid value (age 0) shows a field error and no success message"
+      ],
+      "screenshots": [
+        "j-my-appointments-1280.png",
+        "j-window-disabled-1280.png",
+        "j-notes-1280.png",
+        "j-profile-1280.png"
+      ]
+    },
+    {
+      "id": "J-PW-S4-1280",
+      "story": "E5-S4",
+      "features": [
+        "F110",
+        "F111",
+        "F112",
+        "F113",
+        "F114",
+        "F115"
+      ],
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "start_url": "http://localhost:5173/login",
+      "steps": [
+        "log in as doctor A; land on /queue",
+        "F110: date picker present; pick the date with seeded appointments; each listed time carries the provider timezone label derived from the queue response field 'timezone' (Asia/Kolkata; label may render as the IANA name or an abbreviation such as IST, but must change if the server value changes, verified by route-intercepting the queue response with timezone 'UTC' and seeing the label update)",
+        "F111: a BOOKED row shows only the buttons for its allowed_actions (exactly one Check in button for ['CHECKED_IN']); Mark NO_SHOW before the start time is disabled with explanatory text",
+        "F112: click Check in -> row status updates to CHECKED_IN; for 409 intercept the status POST with 409 -> inline message shown and the queue is re-fetched (a further GET /api/doctors/me/queue observed and the row shows the server status)",
+        "F113: open slot calendar; Block an AVAILABLE slot -> BLOCKED; Unblock -> AVAILABLE; a BOOKED slot's block control is disabled",
+        "F114: open appointment detail for a BOOKED appointment -> no note form; for a COMPLETED one -> add-note form; submit a note -> it appears in the list; no edit/delete controls on any note",
+        "F115: at 1280x800 queue, calendar and detail render the full layout without horizontal overflow"
+      ],
+      "screenshots": [
+        "j-queue-1280.png",
+        "j-slots-1280.png",
+        "j-detail-1280.png"
+      ]
+    },
+    {
+      "id": "J-PW-S4-375",
+      "story": "E5-S4",
+      "features": [
+        "F115"
+      ],
+      "viewport": {
+        "width": 375,
+        "height": 800
+      },
+      "start_url": "http://localhost:5173/login",
+      "steps": [
+        "log in as doctor A at 375x800; on queue, slot calendar and appointment detail assert document.documentElement.scrollWidth <= clientWidth (no horizontal scroll)"
+      ],
+      "screenshots": [
+        "j-queue-375.png",
+        "j-slots-375.png",
+        "j-detail-375.png"
+      ]
+    }
+  ],
+  "design_checks": [],
+  "architecture_checks": {
+    "files_must_exist": [
+      "frontend/src/api/notes.ts",
+      "frontend/src/api/profile.ts",
+      "frontend/src/api/doctorQueue.ts",
+      "frontend/src/hooks/useMyAppointments.ts",
+      "frontend/src/hooks/useProfile.ts",
+      "frontend/src/hooks/useNotes.ts",
+      "frontend/src/hooks/useQueue.ts",
+      "frontend/src/hooks/useDoctorSlots.ts",
+      "frontend/src/app/pages/patient/MyAppointmentsPage.tsx",
+      "frontend/src/app/pages/patient/NotesPage.tsx",
+      "frontend/src/app/pages/patient/ProfilePage.tsx",
+      "frontend/src/app/pages/doctor/QueuePage.tsx",
+      "frontend/src/app/pages/doctor/SlotCalendarPage.tsx",
+      "frontend/src/app/pages/doctor/AppointmentDetailPage.tsx",
+      "frontend/src/components/AppointmentCard.tsx",
+      "frontend/src/components/QueueRow.tsx",
+      "frontend/src/components/NoteForm.tsx",
+      "frontend/tests/unit/change-window.test.tsx",
+      "frontend/tests/unit/appointment-card.test.tsx",
+      "frontend/tests/unit/allowed-actions.test.tsx",
+      "scripts/check_traceability.py",
+      "backend/tests/architecture/test_layers.py",
+      "backend/tests/architecture/test_traceability.py",
+      ".github/workflows/ci.yml"
+    ],
+    "files_must_not_exist": [],
+    "content_rules": [
+      "E5-S3: routes for My appointments, notes and profile registered in frontend/src/app/routes.tsx under the PATIENT role guard; AppointmentCard renders status as text and 'Join video visit' only for BOOKED, CHECKED_IN, IN_PROGRESS; Cancel/Reschedule enabled state driven by server allowed_actions/change_deadline, the 60-minute text only explanatory",
+      "E5-S3: notes view has no edit/delete controls or inputs; 409 responses shown as an inline message (no alert/console); API calls go through api/client.ts; types from types/contracts.ts; no 'any'",
+      "E5-S4: QueueRow renders only buttons listed in allowed_actions; Mark NO_SHOW disabled with explanation before start; times formatted via config/format.ts with the provider timezone from the queue response field 'timezone' (or GET /api/config provider_timezone), no hard-coded zone; NoteForm rendered only for COMPLETED; slot block control disabled for BOOKED slots; DOCTOR route guard on /queue and doctor pages",
+      "E5-S4: 1280px-first layout, no horizontal scroll at 375px; accessible labels; status conveyed by text not colour alone",
+      "E6-S2: backend/pyproject.toml enforces coverage fail_under 80 plus a 95% domain-layer threshold, import-linter contracts (layers + forbidden Repository -> Service), mypy strict, ruff; ac/nfr markers registered; scripts/check_traceability.py scans for AC-01..AC-10 and NFR-01..NFR-08 and exits non-zero on any missing; .github/workflows/ci.yml runs all gates",
+      "Group-wide gates mapped to criteria: frontend npm test, npm run lint, npm run typecheck pass; backend lint-imports, mypy --strict src/, ruff check . pass (E6-S2 AC3-4)"
+    ]
+  },
+  "review_notes": [
+    "Proposed by generator (lean); pending evaluator review. Features: F104-F109 (E5-S3), F110-F115 (E5-S4), F124-F127 and F136 (E6-S2); F136 is numbered out of sequence but is group J / E6-S2 in features.json.",
+    "Existing-code finding: backend endpoints for appointments mine/cancel/reschedule/status/notes, profile, doctor queue and slots were built in groups E-I. E5-S3/E5-S4 are frontend-only, so J-API-1..6 are regression checks of UI-facing shapes. Frontend currently has no patient appointment/notes/profile pages or doctor pages; PATHS.queue exists in config/routes.ts but no page file.",
+    "Existing-code finding (E6-S2): backend/pyproject.toml already has fail_under = 80, ac/nfr markers, a layers contract and an API-forbidden contract and mypy strict; missing: 95% domain-layer gate, explicit Repository -> Service forbidden contract (the layers contract may already catch it; evaluator confirms via scratch violation), scripts/check_traceability.py, backend/tests/architecture/test_layers.py and test_traceability.py, and .github/workflows/ci.yml (directory absent).",
+    "Judgement call: page route paths are not fixed by the stories, so Playwright checks navigate in-app. Frontend test paths follow component-map FT = frontend/tests.",
+    "Lean mode: no design critic; design_checks empty.",
+    "Evaluator review: queue timezone field verified in api-contracts API-15 as 'timezone' (IANA name); 'provider_timezone' belongs to API-02 GET /api/config. 405 for notes applies to /notes/{note_id} (API-29). Error codes corrected (CHANGE_WINDOW_CLOSED, SLOT_UNAVAILABLE, INVALID_SLOT_STATE). Added J-API-12/13 (role guard, 409 refetch data). Removed untraceable items: S3 1280 overflow step, mockup-aesthetic and no-console.log rules, files<300/test-first/no-PHI group-wide rule (not in these stories' ACs)."
+  ]
+}

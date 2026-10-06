@@ -1,0 +1,301 @@
+{
+  "group": "D",
+  "stories": ["E1-S5", "E2-S2", "E5-S1"],
+  "features": ["F022","F023","F024","F025","F026","F135","F032","F033","F034","F035","F036","F037","F093","F094","F095","F096","F097","F098"],
+  "mode": "lean",
+  "verification_mode": "local",
+  "contract_status": "final (evaluator-reviewed)",
+  "start_command": "cd backend && export DATABASE_PATH=./eval-d.db JWT_SECRET=eval-secret-at-least-32-bytes-long-0123456789 PROVIDER_TIMEZONE=UTC APP_ENV=dev && rm -f eval-d.db && uv run alembic upgrade head && uv run uvicorn telemed.api.app:create_app --factory --host 127.0.0.1 --port 8000 > ../eval-d-server.log 2>&1",
+  "frontend_start_command": "From repo root: npm install && npm start (root package.json is created by E5-S1). Must serve the Vite dev server on http://localhost:5173 with /api and /health proxied to http://localhost:8000. If npm start also launches the backend, the backend start_command is not needed; otherwise start both.",
+  "start_note": "Backend :8000 plus frontend :5173 (E5-S1 creates frontend/ and the root package.json; neither exists before this group). DATABASE_PATH is relative to backend/, so sqlite3 inspection targets backend/eval-d.db. JWT_SECRET must be exported (min 32 bytes). No admin bootstrap endpoint exists, so the evaluator inserts an admin via sqlite3 (argon2 hash generated with uv run python, same technique as group C) and logs in via POST /api/auth/login. Doctors are created only through POST /api/admin/doctors (E2-S2). Routes that do NOT exist until later groups: PUT /api/admin/patients/{id}/profile (API-20, E4-S2), /api/doctors/me/* (E2-S3), doctor search (E2-S4), appointments (E3/E4), /api/admin/users (E4-S2). The UI landing routes /doctors, /queue, /admin/users are placeholder pages in E5-S1 (orchestrator decision 3); E5-S1 only has to land on the correct URL and render a shell with loading/empty/error states. Health check: http://localhost:8000/health (5 retries, exponential backoff) before any check; for Playwright also http://localhost:5173/health through the proxy.",
+  "backend_url": "http://localhost:8000",
+  "frontend_url": "http://localhost:5173",
+  "api_checks": [
+    {
+      "id": "D-API-0", "story": "E5-S1", "ac": "prerequisite", "feature": "F096",
+      "note": "frontend-to-backend wiring prerequisite for every Playwright check: GET http://localhost:5173/health -> 200 {status: ok} via the Vite proxy; GET /api/config (API-02) -> 200 {provider_timezone, slot_window_days: 14, change_window_minutes: 60} both directly on :8000 and via http://localhost:5173/api/config. Failure here fails all of E5-S1 as infrastructure.",
+      "method": "GET", "path": "/api/config", "expect_status": 200,
+      "expect_body_fields": {"provider_timezone": "string", "slot_window_days": 14, "change_window_minutes": 60}
+    },
+    {
+      "id": "D-API-1a", "story": "E1-S5", "ac": 1, "feature": "F022",
+      "note": "register p1 (known full_name, age, gender, phone), login, GET own profile",
+      "method": "GET", "path": "/api/patients/me/profile", "expect_status": 200,
+      "expect_body_fields": {"patient_id": "equals p1 user_id", "version_number": 1, "full_name": "as registered", "age": "JSON integer as registered", "gender": "as registered", "phone": "as registered", "updated_at": "ISO 8601 UTC with trailing Z"}
+    },
+    {
+      "id": "D-API-1b", "story": "E1-S5", "ac": 1, "feature": "F022",
+      "note": "access-order control (API-06/07 errors): no token and a malformed token on GET and on PUT /api/patients/me/profile -> 401 UNAUTHENTICATED; no version row added by the PUT",
+      "method": "GET", "path": "/api/patients/me/profile", "expect_status": 401,
+      "expect_body_fields": {"code": "UNAUTHENTICATED"}
+    },
+    {
+      "id": "D-API-2a", "story": "E1-S5", "ac": 2, "feature": "F023",
+      "note": "snapshot all patient_profile_versions rows for p1 via sqlite3 (SELECT * ORDER BY version_number, plus hex() of text columns), PUT only {\"phone\":\"<new>\"}, snapshot again: row count +1, new version_number = latest+1, earlier rows byte-identical to the snapshot, full_name/age/gender carried forward into the new row, changed_by_user_id = p1, response is the new PatientProfile",
+      "method": "PUT", "path": "/api/patients/me/profile", "expect_status": 200,
+      "expect_body_fields": {"version_number": "previous + 1", "phone": "new value", "full_name": "carried forward", "age": "carried forward", "gender": "carried forward"}
+    },
+    {
+      "id": "D-API-2b", "story": "E1-S5", "ac": 2, "feature": "F023",
+      "note": "append-only enforced by DB triggers trg_ppv_no_update / trg_ppv_no_delete (migration 0001): sqlite3 UPDATE and DELETE on patient_profile_versions both abort; data unchanged afterwards",
+      "expect": "both statements abort with 'patient_profile_versions is append-only'; data unchanged"
+    },
+    {
+      "id": "D-API-3", "story": "E1-S5", "ac": 3, "feature": "F024",
+      "note": "PUT full_name A and age A, then PUT full_name B and phone B (age omitted), then GET: returns B values with age A carried forward, version_number = start + 2, exactly 2 new rows exist (history retained, row for update A still holds A values)",
+      "method": "GET", "path": "/api/patients/me/profile", "expect_status": 200,
+      "expect_body_fields": {"full_name": "B", "phone": "B", "age": "A (carried forward)"}
+    },
+    {
+      "id": "D-API-4a", "story": "E1-S5", "ac": 4, "feature": "F025",
+      "note": "doctor token (onboarded via E2-S2) on GET and PUT /api/patients/me/profile -> 403 FORBIDDEN; version row count for all patients unchanged after the PUT. Admin token on the same /me routes -> 403 (permission matrix 0.2.1). Doctor PUT with an INVALID body still gets 403, not 422 (access order).",
+      "method": "GET", "path": "/api/patients/me/profile", "expect_status": 403,
+      "expect_body_fields": {"code": "FORBIDDEN"}
+    },
+    {
+      "id": "D-API-4b", "story": "E1-S5", "ac": 4, "feature": "F025",
+      "note": "patient B GET /api/patients/{A_id}/profile -> 404 NOT_FOUND; body byte-identical to the 404 for a non-existent id and for an id belonging to a doctor (no existence leak). Controls (API-08): patient A on own id -> 200; doctor on /api/patients/{A_id}/profile -> 403; admin -> 200.",
+      "method": "GET", "path": "/api/patients/{patient_id}/profile", "expect_status": 404,
+      "expect_body_fields": {"code": "NOT_FOUND"}
+    },
+    {
+      "id": "D-API-5a", "story": "E1-S5", "ac": 5, "feature": "F026",
+      "note": "pytest with caplog: PUT with a unique name and unique phone; at least one log record contains the user_id; no record at any level contains the unique name, phone, age or gender values; request body never logged. Zero selected tests counts as FAIL (pytest exit code 5).",
+      "command": "cd backend && uv run pytest tests/integration/test_profile_versions.py -q -k \"log or phi\"",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "D-API-5b", "story": "E1-S5", "ac": 5, "feature": "F026",
+      "note": "live log check: after D-API-2a/D-API-3 (unique values such as 'Zq7Name<run>' and '+91-555<run>'), grep eval-d-server.log: at least one line from the profile update contains the patient's user_id; zero lines contain any submitted unique full_name or phone value. Also grep for the doctor initial_password used in D-API-7a: zero lines (E2-S2 NFR-01, initial_password never logged).",
+      "command": "grep -c '<unique values>' eval-d-server.log",
+      "expect": "user_id line present; unique profile values and initial_password count 0"
+    },
+    {
+      "id": "D-API-6a", "story": "E1-S5", "ac": 6, "feature": "F135",
+      "note": "partial-PUT field rules: each single field (full_name, age, gender, phone) can be changed alone with 200 and others carried forward; boundaries age 1 and 130 -> 200. 422 VALIDATION_ERROR with errors[].field for: PUT {}; age 0, 131, -1, 30.5, \"30\"; gender 'X'; full_name '' / whitespace-only / 201 chars; phone '' / 33 chars; explicit null on any field. No version row added on any 422. Unknown extra field (e.g. role) ignored: 200 and users.role still PATIENT.",
+      "method": "PUT", "path": "/api/patients/me/profile", "expect_status": 422,
+      "expect_body_fields": {"code": "VALIDATION_ERROR", "errors": "field-level entries"}
+    },
+    {
+      "id": "D-API-6b", "story": "E1-S5", "ac": 6, "feature": "F135",
+      "required": true,
+      "note": "orchestrator decision 1: owner-or-admin rule verified at service level (pytest). profile_service update accepts the owning patient and an admin actor (new version, changed_by_user_id = actor), refuses a doctor actor and another patient actor with Forbidden (mapped to 403) and adds no version row. Zero selected tests counts as FAIL.",
+      "command": "cd backend && uv run pytest tests/integration/test_profile_versions.py -q -k \"owner or admin or forbidden or changed_by\"",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "D-API-6c", "story": "E1-S5", "ac": 6, "feature": "F135",
+      "required": false,
+      "note": "orchestrator decision 1: conditional. API-20 PUT /api/admin/patients/{patient_id}/profile belongs to E4-S2. If it is mounted at evaluation time: admin -> 200 + new version with changed_by_user_id = admin; doctor -> 403; patient (own or other id) -> 403; version counts unchanged on refusals. If not mounted (404/405): record N/A; does not fail group D. The live admin-route assertions are re-verified when E4-S2 is evaluated.",
+      "method": "PUT", "path": "/api/admin/patients/{patient_id}/profile",
+      "expect": "200 for admin, 403 for doctor/patient, or documented N/A"
+    },
+    {
+      "id": "D-API-7a", "story": "E2-S2", "ac": 1, "feature": "F032",
+      "note": "admin (sqlite3-inserted, logged in) POSTs email, initial_password, full_name, specialty Cardiology, languages [en,hi], fee \"500.00\", one template weekday 0 09:00-12:00 slot_length 30. Expect 201, doctor_id == user_id (int). sqlite3: users row role DOCTOR, active 1, password_hash is an argon2 hash ($argon2...) and not the plaintext; doctor_profiles.fee_minor = 50000; one availability_templates row; slots only on Mondays inside the generation window (now, now+14d) with exactly 6 slots per Monday (09:00..11:30 UTC), all AVAILABLE, none in the past; response slots_created equals that doctor's slots row count (evaluation date 2026-10-06 Tuesday -> Mondays 10-12 and 10-19 -> 12).",
+      "method": "POST", "path": "/api/admin/doctors", "expect_status": 201,
+      "expect_body_fields": {"doctor_id": "int, equals user_id", "email": "lower-cased", "fee": "500.00", "languages": ["en", "hi"], "specialty": "Cardiology", "availability_templates": "1 entry with template_id", "slots_created": "int equals slots rows for doctor"},
+      "expect_body_absent": ["password", "initial_password", "password_hash"]
+    },
+    {
+      "id": "D-API-7b", "story": "E2-S2", "ac": 1, "feature": "F032",
+      "note": "valid-details variants per API-16: fee '500.5' returned normalised '500.50'; fee '0.00' accepted; languages ['EN','hi','en'] stored/returned ['en','hi']; full_name omitted defaults to the email local part; two non-overlapping templates on the same weekday accepted (slots generated for both windows)",
+      "method": "POST", "path": "/api/admin/doctors", "expect_status": 201
+    },
+    {
+      "id": "D-API-8a", "story": "E2-S2", "ac": 2, "feature": "F033",
+      "note": "no token -> 401 UNAUTHENTICATED; malformed token -> 401; patient token -> 403 FORBIDDEN; doctor token -> 403 FORBIDDEN. sqlite3 user/doctor_profiles/templates/slots counts unchanged after each refusal. Access order: a patient sending an INVALID body still gets 403, not 422; no token with invalid body gets 401.",
+      "method": "POST", "path": "/api/admin/doctors", "expect_status": 403,
+      "expect_body_fields": {"code": "FORBIDDEN"}
+    },
+    {
+      "id": "D-API-9a", "story": "E2-S2", "ac": 3, "feature": "F034",
+      "note": "422 VALIDATION_ERROR cases (fresh email each): end_time == start_time; end_time < start_time; slot_length_minutes 0; slot_length_minutes -30; 09:00-10:40 with 30-minute slots (100-minute window); overlapping rows same weekday; an invalid row at index 1 after a valid row 0 (errors[].field names availability_templates[1].*). errors[].field includes availability_templates[0].end_time or availability_templates[0].slot_length_minutes as applicable. sqlite3 counts of users, doctor_profiles, availability_templates and slots identical before/after each case; the email is still unregistered (a subsequent valid POST with it returns 201).",
+      "method": "POST", "path": "/api/admin/doctors", "expect_status": 422,
+      "expect_body_fields": {"code": "VALIDATION_ERROR", "errors": "entry with field availability_templates[n].*"}
+    },
+    {
+      "id": "D-API-10a", "story": "E2-S2", "ac": 4, "feature": "F035",
+      "note": "fee 'abc', '-1.00', '500.123', '' and JSON number 500 each -> 422 with errors[].field = fee; no rows persisted on any 422 (counts unchanged); message does not echo the submitted fee",
+      "method": "POST", "path": "/api/admin/doctors", "expect_status": 422,
+      "expect_body_fields": {"code": "VALIDATION_ERROR", "errors": "entry with field fee"}
+    },
+    {
+      "id": "D-API-11", "story": "E2-S2", "ac": 5, "feature": "F036",
+      "note": "onboard a doctor, onboard again with the same email and with different casing -> 409 EMAIL_ALREADY_REGISTERED; sqlite3 shows exactly one users row for the email and unchanged doctor_profiles/templates/slots counts. Also 409 when the email belongs to an existing patient (patient row untouched, role still PATIENT).",
+      "method": "POST", "path": "/api/admin/doctors", "expect_status": 409,
+      "expect_body_fields": {"code": "EMAIL_ALREADY_REGISTERED"}
+    },
+    {
+      "id": "D-API-12a", "story": "E2-S2", "ac": 6, "feature": "F037",
+      "note": "login with the admin-supplied initial_password: 200, role DOCTOR, user_id equals doctor_id. Negative control: a wrong password for that email -> 401 INVALID_CREDENTIALS (proves the supplied password is the one stored).",
+      "method": "POST", "path": "/api/auth/login", "expect_status": 200,
+      "expect_body_fields": {"role": "DOCTOR", "token_type": "bearer", "user_id": "equals doctor_id"}
+    },
+    {
+      "id": "D-API-12b", "story": "E2-S2", "ac": 6, "feature": "F037",
+      "note": "orchestrator decision 2: GET /api/auth/me with the doctor token -> 200 role DOCTOR, active true; sqlite3 users.role for that user_id = DOCTOR. The doctor-only 200 is shown by pytest (D-API-12c) via a test route using the real require_roles(DOCTOR); live corroboration is the 403 on patient-only routes (D-API-4a).",
+      "method": "GET", "path": "/api/auth/me", "expect_status": 200,
+      "expect_body_fields": {"role": "DOCTOR", "active": true}
+    },
+    {
+      "id": "D-API-12c", "story": "E2-S2", "ac": 6, "feature": "F037",
+      "note": "pytest: doctor onboarded through the service/API logs in with initial_password and gets 200 on a require_roles(DOCTOR) test route; a patient token on that route gets 403. Zero selected tests counts as FAIL.",
+      "command": "cd backend && uv run pytest tests/integration/test_onboard_doctor.py -q -k \"login or doctor_only or role\"",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "D-API-13a", "story": "E2-S2", "ac": 3, "feature": "F034",
+      "note": "atomicity (AC3/AC5 'persists nothing', story: one transaction): pytest with an injected failure in slot generation after the user/profile/template inserts; asserts zero users/doctor_profiles/templates/slots rows remain. Zero selected tests counts as FAIL.",
+      "command": "cd backend && uv run pytest tests/integration/test_onboard_doctor.py -q -k \"atomic or rollback\"",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "D-API-13b", "story": "E1-S5,E2-S2", "ac": "regression", "feature": "F022,F032",
+      "note": "full backend suite (new story modules plus groups A-C regression, including architecture/layering tests)",
+      "command": "cd backend && uv run pytest -q",
+      "expect_exit_code": 0
+    }
+  ],
+  "playwright_checks": [
+    {
+      "id": "D-PW-1", "story": "E5-S1", "ac": 1, "feature": "F093",
+      "note": "log in through the UI at /login as a patient. Via page.evaluate: sessionStorage has a key whose value is (or contains) the JWT (three dot-separated segments) equal to the access_token of the login response; localStorage has no key or value containing that token and no key matching /token|jwt|access/i; document.cookie holds no token. Reload: session survives. New browser context: session absent (lands on /login when visiting a protected route).",
+      "url": "http://localhost:5173/login",
+      "expect": "token only in sessionStorage; localStorage and cookies clean"
+    },
+    {
+      "id": "D-PW-2", "story": "E5-S1", "ac": 2, "feature": "F094",
+      "note": "log in via UI as patient -> URL path /doctors; as doctor (onboarded via E2-S2) -> /queue; as admin (sqlite3-inserted) -> /admin/users. Each page renders a shell (no blank screen, no uncaught console error). Page bodies may be placeholders until E5-S2/S4/S5 (orchestrator decision 3).",
+      "url": "http://localhost:5173/login",
+      "expect": "/doctors, /queue, /admin/users respectively"
+    },
+    {
+      "id": "D-PW-3a", "story": "E5-S1", "ac": 3, "feature": "F095",
+      "note": "with empty sessionStorage, direct visits to /queue, /doctors and /admin/users each end at /login",
+      "url": "http://localhost:5173/queue",
+      "expect": "redirect to /login"
+    },
+    {
+      "id": "D-PW-3b", "story": "E5-S1", "ac": 3, "feature": "F095",
+      "note": "wrong-role visits show the not-allowed page (distinct from the login and not-found pages, URL not changed to /login): patient visiting /admin/users and /queue; doctor visiting /admin/users; admin visiting /queue",
+      "url": "http://localhost:5173/admin/users",
+      "expect": "not-allowed page"
+    },
+    {
+      "id": "D-PW-3c", "story": "E5-S1", "ac": 3, "feature": "F095",
+      "note": "orchestrator decision 4: unknown route (/no-such-page) renders the not-found page; an object route whose API fetch returns 404 NOT_FOUND (another user's or missing object) renders the not-found page, with the 404 mocked via page.route (record which route was used). Never a blank page or raw error/JSON.",
+      "url": "http://localhost:5173/no-such-page",
+      "expect": "not-found page"
+    },
+    {
+      "id": "D-PW-4a", "story": "E5-S1", "ac": 4, "feature": "F096",
+      "note": "logged in as patient, intercept the next protected API call (e.g. /api/auth/me or the page's data call) with page.route returning 401 UNAUTHENTICATED: sessionStorage token cleared and URL becomes /login. Contract carve-out (API-04): a login 401 INVALID_CREDENTIALS must NOT behave as session expiry; it shows the generic form message and stays on /login.",
+      "url": "http://localhost:5173/doctors",
+      "expect": "session cleared and redirect to /login on 401"
+    },
+    {
+      "id": "D-PW-4b", "story": "E5-S1", "ac": 4, "feature": "F096",
+      "note": "intercept (1) the login POST and (2) a protected API call on an authenticated page with 503 SERVICE_UNAVAILABLE: a generic message containing 'try again' is visible, with no stack trace, SQL, HTTP status text or raw JSON; session NOT cleared and URL unchanged in case (2)",
+      "url": "http://localhost:5173/login",
+      "expect": "generic try-again text, no technical detail"
+    },
+    {
+      "id": "D-PW-5a", "story": "E5-S1", "ac": 5, "feature": "F097",
+      "note": "register the same email twice through the UI (second time with different casing too): second submit shows an inline duplicate-email message (409) associated with the email field; no navigation away from /register",
+      "url": "http://localhost:5173/register",
+      "expect": "inline duplicate-email message"
+    },
+    {
+      "id": "D-PW-5b", "story": "E5-S1", "ac": 5, "feature": "F097",
+      "note": "wrong password, unknown email and a deactivated user (active=0 via sqlite3) each show the identical single generic message, with no hint which field was wrong",
+      "url": "http://localhost:5173/login",
+      "expect": "one generic message for all login failures"
+    },
+    {
+      "id": "D-PW-5c", "story": "E5-S1", "ac": 5, "feature": "F097",
+      "note": "at viewports 375x812 and 1280x800 on /login and /register, both in the initial state and with an error message displayed (login failure / 409): document.documentElement.scrollWidth <= document.documentElement.clientWidth; submit buttons visible and clickable. Screenshots at both sizes recorded.",
+      "url": "http://localhost:5173/register",
+      "expect": "no horizontal scroll at 375 and 1280"
+    },
+    {
+      "id": "D-PW-6a", "story": "E5-S1", "ac": 6, "feature": "F098",
+      "note": "trigger a login error and a register 409: the element containing the message text is (or is inside) a container with aria-live=polite|assertive or role=alert|status, and that container is present in the DOM before the message is inserted (verify via DOM query and accessibility snapshot)",
+      "url": "http://localhost:5173/login",
+      "expect": "error rendered inside an ARIA live region"
+    },
+    {
+      "id": "D-PW-6b", "story": "E5-S1", "ac": 6, "feature": "F098",
+      "note": "orchestrator decision 3: on the placeholder shell pages (e.g. /doctors), under (a) loading (delay the API via page.route), (b) empty ({items: [], total: 0}), (c) error (500 and 503) a distinct visible Loading, Empty or Error state is shown, never a blank area. If a shell page issues no API call, exercise the shared LoadingState/EmptyState/ErrorState components via the vitest tests (D-PW-7) and record which path was used.",
+      "url": "http://localhost:5173/doctors",
+      "expect": "loading, empty and error states each visible"
+    },
+    {
+      "id": "D-PW-7", "story": "E5-S1", "ac": "1,3,6", "feature": "F093,F095,F098",
+      "note": "headless frontend unit suite (session storage, route guards, shared state components) passes; also tsc type check passes",
+      "command": "cd frontend && npx vitest run && npx tsc --noEmit",
+      "expect_exit_code": 0
+    }
+  ],
+  "design_checks": [],
+  "architecture_checks": {
+    "files_must_exist": [
+      "backend/src/telemed/api/schemas/profile.py",
+      "backend/src/telemed/api/routers/patients.py",
+      "backend/tests/integration/test_profile_versions.py",
+      "backend/src/telemed/service/doctor_service.py",
+      "backend/src/telemed/api/schemas/admin.py",
+      "backend/src/telemed/api/schemas/doctors.py",
+      "backend/src/telemed/api/routers/admin.py",
+      "backend/src/telemed/repository/doctors_repo.py",
+      "backend/tests/integration/test_onboard_doctor.py",
+      "package.json",
+      "frontend/package.json",
+      "frontend/vite.config.ts",
+      "frontend/index.html",
+      "frontend/src/api/client.ts",
+      "frontend/src/api/auth.ts",
+      "frontend/src/hooks/useAuth.ts",
+      "frontend/src/app/main.tsx",
+      "frontend/src/app/routes.tsx",
+      "frontend/src/components/AriaLiveRegion.tsx",
+      "frontend/tests/unit/session.test.tsx",
+      "frontend/tests/unit/guards.test.tsx"
+    ],
+    "files_must_not_exist": [
+      "backend/src/telemed/api/routers/doctors.py",
+      "backend/src/telemed/api/routers/appointments.py"
+    ],
+    "content_rules": [
+      "E1-S5 AC2/NFR-02: profiles_repo.py exposes insert-only version functions; no UPDATE or DELETE against patient_profile_versions anywhere in backend/src; update always inserts version_number = latest + 1 inside a unit of work",
+      "E1-S5 AC3: current profile is derived as the highest version_number for the patient; no mutable current-profile copy is written on update",
+      "E1-S5 AC4: /api/patients/me/* guarded by require_roles(PATIENT) (403 for doctor and admin); GET /api/patients/{patient_id}/profile uses service/access.py with explicit ADMIN bypass and 404 for foreign or non-patient ids; the static /me routes are registered before /{patient_id}",
+      "E1-S5 AC5: profile_service logs only user_id and version_number; no logger call interpolates profile values (full_name, age, gender, phone) or the request body",
+      "E1-S5 AC6: owner-or-admin rule lives in service/profile_service.py, not the router; partial update merges onto the latest version; changed_by_user_id recorded; schemas reject null/empty values and age outside 1..130",
+      "E2-S2 AC1/AC3/AC5: doctor_service.onboard performs user, doctor profile, availability templates and slot generation in ONE unit_of_work transaction; template validation (end > start, length > 0, divides window, no same-weekday overlap) runs before any insert",
+      "E2-S2 AC4: fee parsing/validation lives in types/money.py (Decimal or integer minor units, never float); stored as fee_minor and serialised as a 2-decimal string; request fee must be a JSON string",
+      "E2-S2 AC2/AC6: admin router guarded by require_roles(ADMIN) at router level; initial_password hashed via service/security.py using the same Argon2 path as registration (so login works); initial_password never logged or returned",
+      "E2-S2 AC5: duplicate email maps to the shared EmailAlreadyRegistered exception (409 EMAIL_ALREADY_REGISTERED), case-insensitive",
+      "Layering (existing import-linter contracts): backend/src/telemed/api/* imports only service/* and types/*, never repository/* or config/*; E2-S2 reuses the E2-S1 slot_generator rather than duplicating generation logic",
+      "E5-S1 AC1: token read/written only through sessionStorage in a single session module; grep of frontend/src finds no localStorage use with token data",
+      "E5-S1 AC3/AC4: route guards and 401 handling live in one place (api/client.ts interceptor plus routes.tsx guards); every API call goes through client.ts, no component calls fetch directly; login 401 INVALID_CREDENTIALS is not treated as session expiry",
+      "E5-S1 AC6: AriaLiveRegion, LoadingState, EmptyState, ErrorState shared components exist under frontend/src/components and are reused by the auth screens and shell pages",
+      "E5-S1: root package.json defines start (Vite dev server on 5173, /api and /health proxied to :8000 in vite.config.ts); frontend uses relative /api paths only (no hard-coded backend URL) and snake_case API types matching api-contracts.md"
+    ]
+  },
+  "review_notes": [
+    "Evaluator review complete; this is the final contract. Lean mode: every gating check maps to an acceptance criterion of E1-S5 (F022-F026, F135), E2-S2 (F032-F037) or E5-S1 (F093-F098), or is a declared prerequisite/regression (D-API-0, D-API-13b). design_checks empty on purpose.",
+    "Orchestrator decision 1 (F135): API-20 PUT /api/admin/patients/{id}/profile belongs to E4-S2. Owner-or-admin rule is verified at service level by pytest (D-API-6b, required). The live admin-route check D-API-6c is conditional (required: false) and N/A if the route is not mounted; it is re-verified at E4-S2. F135 may pass in group D on D-API-4a + D-API-6a + D-API-6b.",
+    "Orchestrator decision 2 (F037): doctor-only route substituted by GET /api/auth/me role DOCTOR + sqlite3 role check (D-API-12b) and a pytest require_roles(DOCTOR) test route (D-API-12c). Accepted.",
+    "Orchestrator decision 3: /doctors, /queue, /admin/users are placeholder shells; E5-S1 fails only for wrong URL, guard behaviour, or missing loading/empty/error states, not missing page content.",
+    "Orchestrator decision 4: 'another user's object shows not-found' verified with a page.route-mocked 404 (D-PW-3c).",
+    "Added: D-API-0 (proxy + /api/config prerequisite, moved from former D-API-14), D-API-5b (live server-log grep for PHI and initial_password), D-API-12c (pytest doctor-only route), D-API-13a (atomic rollback pytest as its own gating check), D-API-13b (full backend suite instead of a hand-picked module list), sqlite3 assertions for argon2 hash and fee_minor = 50000 in D-API-7a, changed_by_user_id in D-API-2a, index-1 template error path in D-API-9a, tsc in D-PW-7, error-state viewport check in D-PW-5c, 503 on an authenticated call in D-PW-4b.",
+    "Removed (no acceptance criterion): former D-API-10b (initial_password length, missing specialty, empty languages, bad email validation; API-16 contract rules but not an E2-S2 AC; remain covered by generator pytest); former D-PW-2b (redirect of authenticated users from / and /login, logout); client-side register validation and value retention from D-PW-5a; not-allowed/not-found pages from D-PW-5c (AC5 names register and login screens only); admin-visiting-/doctors from D-PW-3b (admin may use doctor search per permission matrix, so not-allowed there is not mandated); fee '500' and '1e3' cases (ambiguous against the `^\\d+\\.\\d{1,2}$`-style contract regex); 'no dangerouslySetInnerHTML / console.log' and mockup-fidelity content rules (not E5-S1 AC; lean mode has no design scoring).",
+    "pytest -k checks (D-API-5a, 6b, 12c, 13a): exit code 5 (no tests selected) is a FAIL; the generator must name tests so the keywords select them.",
+    "F032 slot count depends on the E2-S1 slot_generator window (now, now+14d) and PROVIDER_TIMEZONE=UTC; on evaluation date 2026-10-06 (Tuesday) the expected count is 12 (Mondays 2026-10-12 and 2026-10-19). Re-derive if evaluation runs on another date.",
+    "Access order 401 -> 403 -> 404 -> 422 -> 409 is asserted on the new routes (D-API-4a, D-API-8a).",
+    "Admin for live checks inserted via sqlite3 as in group C; doctors only via POST /api/admin/doctors. Use distinct throwaway emails per run; re-run start_command (deletes eval-d.db) for clean state.",
+    "files_must_not_exist lists doctors.py and appointments.py routers to catch scope creep into E2-S3/S4/E3 during group D.",
+    "No learned rules apply (file is empty)."
+  ]
+}

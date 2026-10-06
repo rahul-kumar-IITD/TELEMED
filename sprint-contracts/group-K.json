@@ -1,0 +1,141 @@
+{
+  "group": "K",
+  "stories": ["E6-S3"],
+  "features": ["F128", "F129", "F130", "F131", "F132"],
+  "mode": "lean",
+  "verification_mode": "local",
+  "contract_status": "final (evaluator-reviewed)",
+  "start_command": "cd backend && export DATABASE_PATH=./eval-k.db JWT_SECRET=eval-secret-at-least-32-bytes-long-0123456789 PROVIDER_TIMEZONE=Asia/Kolkata APP_ENV=dev && rm -f eval-k.db && uv run alembic upgrade head && uv run uvicorn telemed.api.app:create_app --factory --host 127.0.0.1 --port 8000 > ../eval-k-server.log 2>&1",
+  "frontend_start_command": "cd frontend && npm run dev -- --host 127.0.0.1 --port 5173 > ../eval-k-frontend.log 2>&1",
+  "start_note": "Backend :8000 and Vite :5173 (proxies /api to 127.0.0.1:8000), as in group J. The Playwright suite is run from the repo root with `npx playwright test` (root script `npm run e2e`); the config may start servers itself via webServer or reuse running ones, provided DATABASE_PATH is a throwaway file. Fixtures in e2e/fixtures/* create their own data through real API calls so specs do not depend on a seeded DB; time-dependent states use a fixed clock plus slot times derived from it. @playwright/test is not currently installed: installing it (root devDependency + `npx playwright install chromium`) is part of the story, not an evaluator setup step. Infrastructure precondition (not an AC check): GET /health returns 200 and the frontend is reachable before any check runs; failure is reported as failure_layer infrastructure.",
+  "backend_url": "http://localhost:8000",
+  "frontend_url": "http://localhost:5173",
+  "api_checks": [],
+  "unit_checks": [
+    {
+      "id": "K-UNIT-1",
+      "story": "E6-S3",
+      "ac": 5,
+      "features": ["F132"],
+      "steps": [
+        "`cd frontend && npm test` exits 0 with all tests green",
+        "Each of the six behaviours has at least one passing, distinctly named vitest test, confirmed by running the named files: (1) 60-minute window disables Cancel/Reschedule with explanatory text (change-window.test.tsx); (2) only allowed_actions buttons are rendered (allowed-actions.test.tsx); (3) 409 handling shows an inline message and refetches (booking-409.test.tsx); (4) a 401 response clears the session and redirects to /login (guards/session tests); (5) an unknown route renders the not-found page (states/guards tests); (6) the token is stored in sessionStorage and not localStorage (session.test.tsx)",
+        "Mutation spot check: in a scratch copy, breaking one behaviour makes the matching test fail"
+      ]
+    }
+  ],
+  "playwright_checks": [
+    {
+      "id": "K-PW-CONFIG",
+      "story": "E6-S3",
+      "ac": 1,
+      "features": ["F128"],
+      "viewport": {"width": 1280, "height": 800},
+      "start_url": "n/a (static inspection plus `npx playwright test --list`)",
+      "steps": [
+        "playwright.config.ts exists at repo root and defines a desktop project (viewport width 1280) and a mobile project (viewport width 375); `npx playwright test --list` shows tests under both project names",
+        "Both projects (or the shared `use` block) set a fixed timezoneId (e.g. Asia/Kolkata, matching backend PROVIDER_TIMEZONE); verified by config and by a spec assertion that the page's Intl timeZone equals it in both projects",
+        "A fixed clock is installed in shared fixtures/setup (page.clock or equivalent), verified by a spec assertion that `new Date()` in the page returns the fixed instant in both projects; time-dependent assertions derive from that instant",
+        "Timezone and clock are not conditional on environment variables that default to unset"
+      ],
+      "screenshots": []
+    },
+    {
+      "id": "K-PW-PATIENT-1280",
+      "story": "E6-S3",
+      "ac": 2,
+      "features": ["F129"],
+      "viewport": {"width": 1280, "height": 800},
+      "start_url": "http://localhost:5173/login",
+      "steps": [
+        "`npx playwright test patient --project=desktop` passes (exit 0)",
+        "e2e/patient.spec.ts flow: log in/register as patient; search doctors on /doctors; pick a slot; confirm booking and see confirmation; /appointments shows the new appointment as BOOKED; cancel (Confirm) -> CANCELLED; a second test books another slot and reschedules to a different slot -> new time shown",
+        "Happy-path requests hit the real backend (no route mocking of booking/cancel/reschedule)"
+      ],
+      "screenshots": []
+    },
+    {
+      "id": "K-PW-PATIENT-375",
+      "story": "E6-S3",
+      "ac": 2,
+      "features": ["F129"],
+      "viewport": {"width": 375, "height": 800},
+      "start_url": "http://localhost:5173/login",
+      "steps": [
+        "`npx playwright test patient --project=mobile` passes (exit 0) with the same flow at 375px"
+      ],
+      "screenshots": []
+    },
+    {
+      "id": "K-PW-DOCTOR-1280",
+      "story": "E6-S3",
+      "ac": 3,
+      "features": ["F130"],
+      "viewport": {"width": 1280, "height": 800},
+      "start_url": "http://localhost:5173/login",
+      "steps": [
+        "`npx playwright test doctor --project=desktop` passes (exit 0)",
+        "e2e/doctor.spec.ts: log in as doctor; on /queue, with the fixed clock before the start time of a BOOKED appointment, Mark NO_SHOW is disabled; Check in -> CHECKED_IN; Start -> IN_PROGRESS; Complete -> COMPLETED (each status visible after the change, real backend)",
+        "On the COMPLETED appointment, add a note -> it appears in the list"
+      ],
+      "screenshots": []
+    },
+    {
+      "id": "K-PW-ADMIN-1280",
+      "story": "E6-S3",
+      "ac": 4,
+      "features": ["F131"],
+      "viewport": {"width": 1280, "height": 800},
+      "start_url": "http://localhost:5173/login",
+      "steps": [
+        "`npx playwright test admin --project=desktop` passes (exit 0)",
+        "e2e/admin.spec.ts: log in as admin; onboard a doctor with a unique email at /admin/doctors/new -> success and doctor appears in /admin/users; deactivate a user -> inactive shown; reactivate -> active shown"
+      ],
+      "screenshots": []
+    },
+    {
+      "id": "K-PW-BASELINES",
+      "story": "E6-S3",
+      "ac": 5,
+      "features": ["F132"],
+      "viewport": {"width": 1280, "height": 800},
+      "start_url": "n/a",
+      "steps": [
+        "Baseline PNGs exist under e2e/__screenshots__/ and are tracked by git (`git ls-files e2e/__screenshots__` non-empty) for each key screen exercised by the flows (login, doctor search, slot picker, my appointments, notes, queue, slot calendar, admin user list), with both a desktop (1280) and a mobile (375) variant for the patient-facing screens; assertions use toHaveScreenshot",
+        "`npx playwright test` run twice in a row on a fresh DB without --update-snapshots passes both times (baselines stable); a modified baseline (in a temp copy) makes the corresponding test fail",
+        "Known limitation, not a failure: baselines may be platform-suffixed (win32)"
+      ],
+      "screenshots": []
+    }
+  ],
+  "design_checks": [],
+  "architecture_checks": {
+    "files_must_exist": [
+      "playwright.config.ts",
+      "e2e/patient.spec.ts",
+      "e2e/doctor.spec.ts",
+      "e2e/admin.spec.ts",
+      "e2e/fixtures",
+      "e2e/__screenshots__",
+      "frontend/tests/unit/change-window.test.tsx",
+      "frontend/tests/unit/allowed-actions.test.tsx",
+      "frontend/tests/unit/booking-409.test.tsx",
+      "frontend/tests/unit/guards.test.tsx",
+      "frontend/tests/unit/session.test.tsx",
+      "frontend/tests/unit/states.test.tsx"
+    ],
+    "files_must_not_exist": [],
+    "content_rules": [
+      "E6-S3 AC1: playwright.config.ts defines projects with viewport widths 1280 and 375, timezoneId set, and a fixed clock installed in shared fixtures/setup",
+      "No test.skip/test.fixme/test.only committed in e2e specs (a passing run must not hide skipped AC flows)",
+      "Root package.json declares @playwright/test as a devDependency and `e2e` runs `playwright test`"
+    ]
+  },
+  "review_notes": [
+    "Evaluator review: removed K-API-0 (health/config prerequisite, no AC; moved to start_note as infrastructure precondition) and K-API-1 (backend regression, no E6-S3 AC; the e2e flows exercise those endpoints for real). Removed checks not traceable to an AC: horizontal-scroll check, synthetic-PHI check, no-sleeps rule, test-only scope rule, doctor/admin desktop-only exclusion requirement, per-screen baseline lists for doctor/admin beyond the key screens.",
+    "Added K-UNIT-1: AC5 requires `npm test` vitest coverage of six named behaviours; this was previously only a content rule and had no executable check.",
+    "Doctor/admin flows are desktop-only per AC3/AC4; patient flow runs on both (AC2).",
+    "Clock caveat: frontend uses the browser clock while the backend uses real server time; the generator must create slots so both agree and document the choice in e2e/fixtures. Evaluator checks flakiness by running the suite twice.",
+    "Lean mode: no design critic. Learned rules: none."
+  ]
+}

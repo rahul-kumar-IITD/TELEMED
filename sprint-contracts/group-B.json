@@ -1,0 +1,418 @@
+{
+  "group": "B",
+  "stories": [
+    "E1-S3",
+    "E2-S1",
+    "E3-S1"
+  ],
+  "features": [
+    "F011",
+    "F012",
+    "F013",
+    "F014",
+    "F015",
+    "F016",
+    "F027",
+    "F028",
+    "F029",
+    "F030",
+    "F031",
+    "F049",
+    "F050",
+    "F051",
+    "F052",
+    "F053",
+    "F134"
+  ],
+  "mode": "lean",
+  "verification_mode": "local",
+  "start_command": "cd backend && export DATABASE_PATH=./eval-b.db JWT_SECRET=eval-secret-at-least-32-bytes-long-0123456789 PROVIDER_TIMEZONE=UTC && rm -f eval-b.db && uv run alembic upgrade head && uv run uvicorn telemed.api.app:create_app --factory --host 127.0.0.1 --port 8000 > ../eval-b-server.log 2>&1",
+  "start_note": "Backend only; npm start does not exist until E5-S1. Real setting names: DATABASE_PATH (SQLite file, shared by alembic via backend/alembic/env.py), PROVIDER_TIMEZONE, JWT_LIFETIME_MINUTES, BUSY_TIMEOUT_MS (.env.example), and JWT_SECRET (specs/design/deployment.md; not yet in .env.example, E1-S3 must add it per component-map; export it explicitly, min 32 bytes). DATABASE_PATH is relative to backend/ (cwd of the command), so sqlite3 inspection targets backend/eval-b.db. Server stdout/stderr is captured to eval-b-server.log. Live API checks need only /api/auth/*; no doctor/slot HTTP endpoints exist in group B (E2-S1 and E3-S1 are Service layer), so those are verified through pytest plus direct sqlite3 inspection.",
+  "backend_url": "http://localhost:8000",
+  "api_checks": [
+    {
+      "id": "B-API-1",
+      "story": "E1-S3",
+      "ac": 1,
+      "feature": "F011",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "body": {
+        "email": "p1@example.test",
+        "password": "Passw0rd!",
+        "full_name": "Pat One",
+        "age": 34,
+        "gender": "FEMALE",
+        "phone": "+911234567890"
+      },
+      "expect_status": 201,
+      "expect_body_fields": {
+        "user_id": "non-null integer",
+        "role": "PATIENT",
+        "email": "p1@example.test"
+      },
+      "expect_body_absent": [
+        "password",
+        "password_hash"
+      ]
+    },
+    {
+      "id": "B-API-2",
+      "story": "E1-S3",
+      "ac": 2,
+      "feature": "F012",
+      "note": "role in body is ignored",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "body": {
+        "email": "p2@example.test",
+        "password": "Passw0rd!",
+        "full_name": "Pat Two",
+        "age": 40,
+        "gender": "MALE",
+        "phone": "555",
+        "role": "ADMIN"
+      },
+      "expect_status": 201,
+      "expect_body_fields": {
+        "role": "PATIENT"
+      }
+    },
+    {
+      "id": "B-API-2b",
+      "story": "E1-S3",
+      "ac": 2,
+      "feature": "F012",
+      "note": "raw sqlite3 after B-API-2: SELECT role FROM users WHERE email='p2@example.test' returns PATIENT (not ADMIN)",
+      "expect": "role = PATIENT"
+    },
+    {
+      "id": "B-API-3",
+      "story": "E1-S3",
+      "ac": 3,
+      "feature": "F013",
+      "note": "after B-API-1, re-register with upper/mixed-case email; sqlite3 confirms exactly one users row for lower(email)='p1@example.test' and stored email is lower-cased",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "body": {
+        "email": "P1@Example.TEST",
+        "password": "Passw0rd!",
+        "full_name": "Dup",
+        "age": 30,
+        "gender": "OTHER",
+        "phone": "1"
+      },
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "EMAIL_ALREADY_REGISTERED"
+      }
+    },
+    {
+      "id": "B-API-4a",
+      "story": "E1-S3",
+      "ac": 4,
+      "feature": "F014",
+      "note": "7-char password rejected",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "body": {
+        "email": "pw7@example.test",
+        "password": "1234567",
+        "full_name": "A",
+        "age": 30,
+        "gender": "OTHER",
+        "phone": "1"
+      },
+      "expect_status": 422,
+      "expect_errors_field": "password"
+    },
+    {
+      "id": "B-API-4b",
+      "story": "E1-S3",
+      "ac": 4,
+      "feature": "F014",
+      "note": "129-char password rejected",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "body_password_length": 129,
+      "body_other": {
+        "email": "pw129@example.test",
+        "full_name": "A",
+        "age": 30,
+        "gender": "OTHER",
+        "phone": "1"
+      },
+      "expect_status": 422,
+      "expect_errors_field": "password"
+    },
+    {
+      "id": "B-API-4c",
+      "story": "E1-S3",
+      "ac": 4,
+      "feature": "F014",
+      "note": "exactly 8 chars accepted",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "body_password_length": 8,
+      "body_other": {
+        "email": "pw8@example.test",
+        "full_name": "A",
+        "age": 30,
+        "gender": "OTHER",
+        "phone": "1"
+      },
+      "expect_status": 201
+    },
+    {
+      "id": "B-API-4d",
+      "story": "E1-S3",
+      "ac": 4,
+      "feature": "F014",
+      "note": "exactly 128 chars accepted",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "body_password_length": 128,
+      "body_other": {
+        "email": "pw128@example.test",
+        "full_name": "A",
+        "age": 30,
+        "gender": "OTHER",
+        "phone": "1"
+      },
+      "expect_status": 201
+    },
+    {
+      "id": "B-API-5",
+      "story": "E1-S3",
+      "ac": 5,
+      "feature": "F015",
+      "note": "raw sqlite3 on the live DB after B-API-1: SELECT password_hash FROM users WHERE email='p1@example.test' starts with '$argon2' and != 'Passw0rd!'",
+      "expect": "hash starts with $argon2; not equal to plaintext"
+    },
+    {
+      "id": "B-API-6a",
+      "story": "E1-S3",
+      "ac": 6,
+      "feature": "F016",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "body": {
+        "email": "p1@example.test",
+        "password": "Passw0rd!"
+      },
+      "expect_status": 200,
+      "expect_body_fields": {
+        "token_type": "bearer",
+        "role": "PATIENT",
+        "access_token": "3-part JWT string",
+        "expires_in": "positive integer",
+        "expires_at": "UTC ISO-8601 in the future",
+        "user_id": "non-null"
+      }
+    },
+    {
+      "id": "B-API-6b",
+      "story": "E1-S3",
+      "ac": 6,
+      "feature": "F016",
+      "note": "wrong password, unknown email, and deactivated account (set users.is_active=0 for p2 via sqlite3) each return 401 INVALID_CREDENTIALS; the three response bodies must be byte-identical",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "expect_status": 401,
+      "expect_body_fields": {
+        "code": "INVALID_CREDENTIALS",
+        "message": "Invalid email or password."
+      },
+      "expect_bodies_identical": true
+    },
+    {
+      "id": "B-API-7a",
+      "story": "E1-S3",
+      "ac": 7,
+      "feature": "F134",
+      "note": "after B-API-1, patient_profile_versions has exactly one row for the user with version 1 and the registered full_name, age, gender, phone",
+      "expect": "1 row, version=1, values match"
+    },
+    {
+      "id": "B-API-7b",
+      "story": "E1-S3",
+      "ac": 7,
+      "feature": "F134",
+      "note": "each of full_name, age, gender, phone omitted in turn returns 422 with an errors[] entry naming that field; no user row created; verify with sqlite3 that users and patient_profile_versions row counts are unchanged after each 422",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "expect_status": 422,
+      "expect_errors_field": "the omitted field"
+    },
+    {
+      "id": "B-API-7c",
+      "story": "E1-S3",
+      "ac": 7,
+      "feature": "F134",
+      "note": "age values 0, 131, -1, 30.5, \"30\" each return 422 on field age; age 1 and 130 return 201",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "expect_status": "422 for invalid ages, 201 for 1 and 130"
+    },
+    {
+      "id": "B-API-7d",
+      "story": "E1-S3",
+      "ac": 7,
+      "feature": "F134",
+      "note": "gender 'ROBOT' and 'female' (wrong case) return 422 on field gender; FEMALE, MALE, OTHER, UNDISCLOSED return 201",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "expect_status": "422 for invalid gender, 201 for the four valid values"
+    },
+    {
+      "id": "B-API-8",
+      "story": "E1-S3",
+      "ac": 1,
+      "feature": "F011",
+      "note": "register/login tests plus security unit tests",
+      "command": "cd backend && uv run pytest tests/integration/test_auth_register_login.py tests/unit/test_security.py -q",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "B-API-10",
+      "story": "E2-S1",
+      "ac": 1,
+      "feature": "F027",
+      "note": "Monday 09:00-12:00 / 30 min yields 6 AVAILABLE slots per in-window Monday",
+      "command": "cd backend && uv run pytest tests/unit/test_slot_generator.py -q",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "B-API-11",
+      "story": "E2-S1",
+      "ac": 2,
+      "feature": "F028",
+      "note": "no slot with start <= now or start >= now+14d; boundary cases around both edges",
+      "command": "cd backend && uv run pytest tests/unit/test_slot_generator.py -q",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "B-API-12",
+      "story": "E2-S1",
+      "ac": 3,
+      "feature": "F029",
+      "note": "generator run twice: same count, no duplicate (doctor_id, start); also a live sqlite3 check after two app startups: SELECT doctor_id,start,COUNT(*) ... GROUP BY ... HAVING COUNT(*)>1 returns zero rows",
+      "command": "cd backend && uv run pytest tests/unit/test_slot_generator.py tests/integration/test_startup_generation.py -q",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "B-API-13",
+      "story": "E2-S1",
+      "ac": 4,
+      "feature": "F030",
+      "note": "PROVIDER_TIMEZONE=Asia/Kolkata: 09:00 template stored as 03:30 UTC; stored datetimes are UTC",
+      "command": "cd backend && uv run pytest tests/unit/test_slot_generator.py -q",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "B-API-14",
+      "story": "E2-S1",
+      "ac": 5,
+      "feature": "F031",
+      "note": "app startup (lifespan) with injected clock advanced 5 days adds only newly in-window slots, no duplicates",
+      "command": "cd backend && uv run pytest tests/integration/test_startup_generation.py -q",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "B-API-15",
+      "story": "E3-S1",
+      "ac": 1,
+      "feature": "F049",
+      "note": "VideoService, PaymentService (charge, refund), PrescriptionService, NotificationService interfaces exist; default wiring in api/deps.py binds a stub for each",
+      "command": "cd backend && uv run pytest tests/unit/test_stubs.py -q",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "B-API-16",
+      "story": "E3-S1",
+      "ac": 2,
+      "feature": "F050",
+      "note": "each stub call emits exactly one JSON log line with identifiers only (appointment_id, event type); no PHI",
+      "command": "cd backend && uv run pytest tests/unit/test_stubs.py -q",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "B-API-17",
+      "story": "E3-S1",
+      "ac": 3,
+      "feature": "F051",
+      "note": "appointment_events row count unchanged after every stub call",
+      "command": "cd backend && uv run pytest tests/unit/test_stubs.py -q",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "B-API-18",
+      "story": "E3-S1",
+      "ac": 4,
+      "feature": "F052",
+      "note": "video stub join URL is deterministic (same input, same URL) and contains the appointment id",
+      "command": "cd backend && uv run pytest tests/unit/test_stubs.py -q",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "B-API-19",
+      "story": "E3-S1",
+      "ac": 5,
+      "feature": "F053",
+      "note": "spy fixtures in conftest override each stub via dependency injection and expose recorded calls",
+      "command": "cd backend && uv run pytest tests/unit/test_stubs.py -q",
+      "expect_exit_code": 0
+    },
+    {
+      "id": "B-API-6c",
+      "story": "E1-S3",
+      "ac": 6,
+      "feature": "F016",
+      "note": "expires_in equals JWT_LIFETIME_MINUTES*60 (1800 by default) and expires_at is about now+expires_in (AC6: access token with an expiry)",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "expires_in": "1800"
+      }
+    },
+    {
+      "id": "B-API-17b",
+      "story": "E3-S1",
+      "ac": 1,
+      "feature": "F049",
+      "note": "default wiring: app/dependency overrides empty, api/deps.py providers return the stub types for Video, Payment, Prescription, Notification",
+      "command": "cd backend && uv run pytest tests/unit/test_stubs.py -q -k wiring",
+      "expect_exit_code": 0
+    }
+  ],
+  "playwright_checks": [],
+  "design_checks": [],
+  "architecture_checks": {
+    "files_must_exist": [
+      "backend/tests/integration/test_auth_register_login.py",
+      "backend/tests/unit/test_security.py",
+      "backend/tests/unit/test_slot_generator.py",
+      "backend/tests/integration/test_startup_generation.py",
+      "backend/tests/unit/test_stubs.py",
+      "backend/src/telemed/service/slot_generator.py",
+      "backend/src/telemed/service/integrations/interfaces.py",
+      "backend/src/telemed/service/integrations/stubs.py"
+    ],
+    "files_must_not_exist": [],
+    "content_rules": [
+      "E1-S3 AC5: password hashing uses argon2; the password_hash is never returned in any response",
+      "E1-S3 AC2: the register request schema does not map a role field into the created user (role hard-coded PATIENT)",
+      "E2-S1: slot generator stores UTC-aware datetimes only and takes the clock from the injected Clock, not datetime.now() directly",
+      "E3-S1 AC3: stubs.py does not import or reference events_repo / appointment_events",
+      "E3-S1 AC1: api/deps.py binds a stub for each of Video, Payment, Prescription, Notification via overridable dependencies"
+    ]
+  },
+  "review_notes": [
+    "Lean mode: only checks mapped to E1-S3, E2-S1, E3-S1 acceptance criteria; generic lint/coverage/size gates omitted as in group A.",
+    "E2-S1 and E3-S1 are Service-layer stories with no HTTP endpoint in group B, so their checks are pytest commands (plus one sqlite3 duplicate check); no api-contracts endpoint covers them.",
+    "Live checks for E1-S3 correspond to API-03 and API-04 in specs/design/api-contracts.md; byte-identical 401 body and message 'Invalid email or password.' come from API-04 and the error table.",
+    "Test file names follow specs/design/component-map.md; if the generator needs different names it must update this contract first.",
+    "Removed B-API-20 (full-suite regression) and B-API-9 (PHI in logs) as neither traces to a group B acceptance criterion; removed alembic-hash and layering content rules for the same reason. Added B-API-2b, B-API-6c, B-API-17b and tightened B-API-3 and B-API-7b with sqlite3 assertions."
+  ]
+}

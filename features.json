@@ -10,8 +10,8 @@
       "Query sqlite_master for table names",
       "Assert all nine table names are present"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -32,8 +32,8 @@
       "Execute DELETE on each and assert the same",
       "Re-read rows and assert they are unchanged"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -54,8 +54,8 @@
       "Read via the repository and assert Decimal('500.00')",
       "Grep money modules and assert no float annotations or float() calls"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -75,8 +75,8 @@
       "Execute PRAGMA journal_mode and assert 'wal'",
       "Execute PRAGMA busy_timeout and assert >= 5000"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -96,8 +96,8 @@
       "Insert an appointment with status 'FOO' and assert IntegrityError",
       "Insert valid values and assert success"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -117,8 +117,8 @@
       "Poll GET /health until the first response",
       "Assert status 200, body status 'ok' and elapsed time < 1s from listening"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -138,8 +138,8 @@
       "GET /health with no header and assert a UUID-format value",
       "GET /health with an over-long or illegal-character value and assert a generated UUID"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -159,8 +159,8 @@
       "Parse every log line as JSON and assert correlation_id exists",
       "Assert the unique email and name strings appear in no log line"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -181,8 +181,8 @@
       "Simulate OperationalError 'database is locked' and assert 503",
       "Assert the 503 body contains no SQL or stack trace text"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -202,8 +202,8 @@
       "Start with PROVIDER_TIMEZONE=Asia/Kolkata and assert it is applied",
       "Start with PROVIDER_TIMEZONE=Mars/Base and assert a non-zero exit with the variable name in the message"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -224,8 +224,8 @@
       "Assert body contains non-null user_id and role 'PATIENT'",
       "Assert the response body contains no password or hash"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:02:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -244,8 +244,8 @@
       "Assert status 201",
       "Read the user from the database and assert role is PATIENT"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:02:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -265,8 +265,8 @@
       "Assert second response status 409",
       "Assert only one user row exists"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:02:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -286,8 +286,8 @@
       "Register with an 8-char password and assert 201",
       "Register with a 128-char password and assert 201"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:02:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -306,8 +306,8 @@
       "Read password_hash from the database",
       "Assert it starts with '$argon2' and differs from the plaintext"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:02:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -325,8 +325,8 @@
       "Login with a wrong password, an unknown email and a deactivated account",
       "Assert all three return 401 with byte-identical JSON bodies"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:02:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -344,8 +344,8 @@
       "Call with 'Bearer garbage' and assert 401",
       "Call with a token whose exp is in the past and assert 401"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:28:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -363,8 +363,8 @@
       "Call an /api/admin route",
       "Assert 403"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:28:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -381,8 +381,8 @@
       "Call a doctor-only route as a patient and assert 403",
       "Call GET /api/appointments/{id} as patient B for patient A's appointment and assert 404"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:28:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -400,8 +400,8 @@
       "Deactivate the user directly in the database",
       "Call a protected route with the token and assert 401"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:28:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -419,8 +419,8 @@
       "Call a patient-scoped GET, a doctor-scoped GET and an admin GET",
       "Assert each returns 200"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:28:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -438,8 +438,8 @@
       "GET /api/patients/me/profile",
       "Assert 200 and full_name, age, gender and phone match the registration data"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:00:00Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -459,8 +459,8 @@
       "Count patient_profile_versions rows and assert it increased by exactly 1",
       "Compare earlier rows with a snapshot taken before and assert they are unchanged"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:00:00Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -480,8 +480,8 @@
       "GET the profile",
       "Assert it returns value B"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:00:00Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -500,8 +500,8 @@
       "Login as a doctor and call GET /api/patients/me/profile, assert 403",
       "Login as patient B and GET /api/patients/{A-id}/profile, assert 404"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:00:00Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -521,8 +521,8 @@
       "Assert a line includes user_id",
       "Assert the unique name and phone appear in no log line"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:00:00Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -542,8 +542,8 @@
       "Run the generator for a doctor with a Monday 09:00-12:00/30 template",
       "Assert exactly 6 slots per Monday in range, all with status AVAILABLE and 30-minute duration"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:02:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -562,8 +562,8 @@
       "Assert no slot has start <= now",
       "Assert no slot has start >= now + 14 days"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:02:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -581,8 +581,8 @@
       "Run it again",
       "Assert the count is unchanged and a GROUP BY doctor_id,start HAVING count>1 query returns zero rows"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:02:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -600,8 +600,8 @@
       "Generate slots for a 09:00 template",
       "Assert the stored start time is 03:30 UTC"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:02:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -619,8 +619,8 @@
       "Advance the clock 5 days and run application startup",
       "Assert new slots exist for days 14-19 and no duplicate rows exist"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:02:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -640,8 +640,8 @@
       "Assert the user has role DOCTOR",
       "Assert 6 slots exist per Monday in range"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:00:00Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -660,8 +660,8 @@
       "POST as doctor and assert 403",
       "POST with no token and assert 401"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:00:00Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -681,8 +681,8 @@
       "POST with a 100-minute window and 30-minute slots and assert 422",
       "Assert user, profile, template and slot counts are unchanged"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:00:00Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -701,8 +701,8 @@
       "POST with fee '-1.00' and assert 422",
       "POST with fee '500.123' and assert 422"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:00:00Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -722,8 +722,8 @@
       "Assert 409",
       "Assert only one user row for the email"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:00:00Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -743,8 +743,8 @@
       "Assert 200",
       "Call a doctor-only route and assert 200"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:00:00Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -763,7 +763,7 @@
       "GET /api/doctors/me/slots for the next 7 days",
       "Assert every returned slot belongs to doctor A and each has a status field"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -783,7 +783,7 @@
       "Assert 200",
       "Read the slot and assert BLOCKED"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -803,7 +803,7 @@
       "Assert 409",
       "Assert the slot is still BOOKED and the appointment still BOOKED"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -821,7 +821,7 @@
       "Block a slot then PUT unblock and assert 200 and AVAILABLE",
       "PUT unblock on an AVAILABLE slot and assert 409"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -839,7 +839,7 @@
       "Login as doctor A and PUT block on doctor B's slot id, assert 404",
       "Login as patient and PUT block, assert 403"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -858,7 +858,7 @@
       "GET with specialty filter and assert every result matches",
       "GET with language filter and assert every result matches"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -878,7 +878,7 @@
       "GET with a day-3 range",
       "Assert doctor A is absent and a doctor with open day-3 slots is present"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -898,7 +898,7 @@
       "GET ?sort=fee and assert nondecreasing fee",
       "GET ?sort=name and assert alphabetical order"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -919,7 +919,7 @@
       "Assert the deactivated doctor is absent",
       "Assert each result has fee matching ^\\d+\\.\\d{2}$ and an earliest_slot field"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -939,7 +939,7 @@
       "GET /api/doctors/{id}/slots",
       "Assert only the AVAILABLE future slots are returned"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -958,7 +958,7 @@
       "GET /api/doctors with no token and assert 401",
       "GET /api/doctors/{id}/slots with no token and assert 401"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -978,8 +978,8 @@
       "Resolve each interface from the dependency container",
       "Assert each resolves to a stub implementation"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:02:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -997,8 +997,8 @@
       "Capture logs and assert exactly one line per call",
       "Assert each line contains appointment_id and no names, emails or free text"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:02:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1016,8 +1016,8 @@
       "Call every stub method",
       "Assert the row count is unchanged"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:02:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1035,8 +1035,8 @@
       "Assert both calls return the same URL",
       "Assert the URL contains '42'"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:02:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1054,8 +1054,8 @@
       "Invoke a service that refunds",
       "Assert the spy recorded exactly one refund call with the appointment id"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:02:16Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1075,8 +1075,8 @@
       "Assert the slot is BOOKED",
       "Assert exactly one appointment_events row of type BOOKED"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T04:30:35Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1099,8 +1099,8 @@
       "Assert zero 503",
       "Assert exactly one appointment row exists"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T04:30:35Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1120,8 +1120,8 @@
       "Assert 409 for each",
       "Assert appointment count is unchanged"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T04:30:35Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1142,8 +1142,8 @@
       "Assert 409",
       "Assert the slot is still AVAILABLE"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T04:30:35Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1162,8 +1162,8 @@
       "POST as doctor and assert 403",
       "POST with no token and assert 401"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T04:30:35Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1184,8 +1184,8 @@
       "Assert the spy charge call count is 1",
       "Assert the response fee equals the doctor's fee string"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T04:30:35Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1208,8 +1208,8 @@
       "Assert one CANCELLED event",
       "Assert refund spy call count is 1"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1228,8 +1228,8 @@
       "Advance the clock past start and cancel again, assert 409",
       "Assert appointment still BOOKED, no new events, refund spy count 0"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1248,8 +1248,8 @@
       "Assert 404",
       "Assert A's appointment is still BOOKED"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1270,8 +1270,8 @@
       "Assert the event actor_role is DOCTOR",
       "Assert refund spy count is 1"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1290,8 +1290,8 @@
       "Assert 409",
       "Assert event count unchanged"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1311,7 +1311,7 @@
       "Assert slot Y BOOKED",
       "Assert slot X AVAILABLE"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -1331,7 +1331,7 @@
       "Read the newest appointment_events row",
       "Assert type RESCHEDULED, old_slot_id X and new_slot_id Y"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -1351,7 +1351,7 @@
       "Assert 409 for each",
       "Assert the appointment slot, both slots' statuses and event count are unchanged"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -1370,7 +1370,7 @@
       "Book a slot at now+59:59 and reschedule, assert 409",
       "Book a slot at now+60:00 and reschedule, assert 200"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -1390,7 +1390,7 @@
       "POST reschedule for each",
       "Assert 409"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -1411,7 +1411,7 @@
       "Assert a non-2xx response",
       "Assert target slot AVAILABLE, old slot BOOKED, appointment slot unchanged"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -1432,7 +1432,7 @@
       "Assert the event count increased by exactly 1 per call",
       "Assert actor_role is DOCTOR"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -1452,7 +1452,7 @@
       "Assert 409 for each",
       "Assert event count unchanged and status unchanged"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -1473,7 +1473,7 @@
       "Repeat from CHECKED_IN, assert 200",
       "Assert slot status BOOKED"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -1495,7 +1495,7 @@
       "Assert results are ordered ascending by start",
       "Assert another doctor's appointments are absent"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -1515,7 +1515,7 @@
       "Advance the clock past start and assert NO_SHOW is present",
       "GET a COMPLETED appointment and assert allowed_actions is empty"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -1534,7 +1534,7 @@
       "Doctor B POST status on doctor A's appointment and assert 404",
       "Patient POST status and assert 403"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -1686,8 +1686,8 @@
       "GET /api/admin/users and assert 5 rows with role and active fields",
       "GET ?role=DOCTOR and assert 2 rows"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1707,8 +1707,8 @@
       "Patient login and old token both return 401",
       "Doctor checks the appointment in and assert 200"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1727,8 +1727,8 @@
       "Complete the appointment and deactivate again, assert 200",
       "GET /api/doctors and assert the doctor is absent"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1747,8 +1747,8 @@
       "Assert 409",
       "Read the user and assert active is true"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1767,8 +1767,8 @@
       "Doctor login returns 200",
       "GET /api/doctors and assert the doctor is present"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1788,8 +1788,8 @@
       "Assert version count increased by 1",
       "Assert earlier rows unchanged"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1888,8 +1888,8 @@
       "Read sessionStorage and assert the token key exists",
       "Read localStorage and assert it holds no token"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:00:00Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1906,8 +1906,8 @@
       "Log in as each role",
       "Assert the URL is /doctors for patient, /queue for doctor and /admin/users for admin"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:00:00Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1925,8 +1925,8 @@
       "Visit /admin/users as patient and assert the not-allowed page",
       "Visit an appointment URL for another user's object and assert the not-found page"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:00:00Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1943,8 +1943,8 @@
       "Mock a 401 response and assert sessionStorage is cleared and URL is /login",
       "Mock a 503 response and assert the text 'try again' is shown with no technical detail"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:00:00Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1962,8 +1962,8 @@
       "Submit wrong login credentials and assert the single generic message",
       "At 375px and at 1280px assert document scrollWidth <= clientWidth"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:00:00Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1980,8 +1980,8 @@
       "Trigger a login error and assert the message container has aria-live",
       "Render a list screen with loading, empty and error mock states and assert each is displayed"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:00:00Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2000,8 +2000,8 @@
       "Assert each result card shows its fee",
       "Apply filters matching nothing and assert the empty state"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2021,8 +2021,8 @@
       "Assert slots are grouped by date",
       "Assert a slot label matches '\\d{2}:\\d{2} IST'"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2042,8 +2042,8 @@
       "Assert navigation to the confirmation view",
       "Assert doctor name, local time and fee are shown"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2064,8 +2064,8 @@
       "Assert the inline message",
       "Assert the slot is no longer listed"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2085,8 +2085,8 @@
       "On search and detail pages assert scrollWidth <= clientWidth",
       "Measure all buttons and links and assert each bounding box >= 44px in both dimensions"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2106,8 +2106,8 @@
       "Assert each card displays the status as text",
       "Assert 'Join video visit' exists on the three active cards and not on the three terminal cards"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942279+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2128,8 +2128,8 @@
       "Assert Cancel and Reschedule are disabled and an explanation is visible",
       "Render one starting in 61 minutes and assert both enabled"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942296+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2149,8 +2149,8 @@
       "Click Cancel and Confirm with the API mocked to 200 and assert the card shows CANCELLED",
       "Mock 409 and assert the inline message and unchanged status"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942300+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2172,8 +2172,8 @@
       "Confirm",
       "Assert the card time equals the new slot time"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942302+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2194,8 +2194,8 @@
       "Assert both note texts are shown",
       "Assert no edit, delete or input controls are present"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942304+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2216,8 +2216,8 @@
       "Assert a success message",
       "Reload the page and assert the new value is displayed"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942306+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2238,8 +2238,8 @@
       "Pick a date",
       "Assert listed times carry the provider timezone label such as 'IST' or 'UTC'"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942307+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2257,8 +2257,8 @@
       "Render a row with allowed_actions ['CHECKED_IN'] and assert exactly one action button",
       "Render a BOOKED row before start and assert Mark NO_SHOW is disabled with explanatory text"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942309+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2276,8 +2276,8 @@
       "Click Check in with the API mocked to 200 and assert the row status",
       "Mock 409 and assert the inline message and a queue refetch"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942311+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2296,8 +2296,8 @@
       "Click Unblock and assert AVAILABLE",
       "Assert a BOOKED slot's block control is disabled"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942313+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2316,8 +2316,8 @@
       "Open a COMPLETED appointment and assert the form",
       "Submit a note and assert it appears in the list with no edit or delete control"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942315+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2335,8 +2335,8 @@
       "Set viewport 1280x800 and assert the queue renders without overflow",
       "Set viewport 375x800 and assert scrollWidth <= clientWidth on queue, calendar and detail"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942316+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2356,7 +2356,7 @@
       "Submit with the API mocked to 201",
       "Assert the new doctor is shown"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -2377,7 +2377,7 @@
       "Assert the message appears beside that field",
       "Assert the other field values are preserved"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -2398,7 +2398,7 @@
       "Assert Reactivate on inactive rows",
       "Assert Deactivate is disabled on the admin's own row"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -2419,7 +2419,7 @@
       "Assert the message mentions active appointments",
       "Assert the row still shows active"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -2439,7 +2439,7 @@
       "Change full_name, age, gender or phone and submit with the API mocked to 200",
       "Assert a success message"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -2459,8 +2459,8 @@
       "Count users per role",
       "Assert 1 admin, >=3 doctors with >=3 distinct specialties and >=5 patients"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": []
@@ -2475,8 +2475,8 @@
       "Run the seed script twice",
       "Assert user and slot counts after the second run equal the counts after the first"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": []
@@ -2491,8 +2491,8 @@
       "Query all seeded emails and assert the suffix '@example.test'",
       "Assert no slot starts after now+14 days or before now"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": []
@@ -2507,8 +2507,8 @@
       "Run `uv run pytest --cov` on the full suite and assert exit code 0",
       "Temporarily lower coverage via a skipped test module in a scratch run and assert a non-zero exit"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942319+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2542,8 +2542,8 @@
       "Run the traceability script and assert it lists all ten AC ids with a test count >= 1",
       "Remove one tag in a scratch copy and assert exit code is non-zero"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942321+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2577,8 +2577,8 @@
       "Run uv run lint-imports and assert exit 0",
       "Add a forbidden import in a scratch copy and assert a contract violation and non-zero exit"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942323+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2612,8 +2612,8 @@
       "Run mypy --strict src/ and assert 'Success'",
       "Run ruff check . and assert exit 0"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942324+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2648,7 +2648,7 @@
       "Assert two projects with viewport widths 1280 and 375",
       "Assert timezoneId is set and the clock is fixed in test setup"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -2673,7 +2673,7 @@
       "Assert the flow passes on the desktop project",
       "Assert it passes on the mobile project"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -2699,7 +2699,7 @@
       "Assert NO_SHOW is disabled before start",
       "Assert a note appears after COMPLETED"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -2724,7 +2724,7 @@
       "Assert the onboarded doctor appears",
       "Assert deactivate then reactivate completes"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -2748,7 +2748,7 @@
       "Run `npx playwright test --update-snapshots` once and verify baseline files exist for both viewports",
       "Run `npm test` in frontend and assert the six listed behaviours each have a passing test"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -2776,8 +2776,8 @@
       "Modify one revision in a scratch copy and assert the check fails",
       "Assert new schema changes exist only as new revisions"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T18:32:22Z",
     "failure_reason": null,
     "failure_layer": null
   },
@@ -2795,8 +2795,8 @@
       "Omit each of full_name, age, gender and phone in turn and assert 422 with errors[].field naming the omitted field and no user row created",
       "Send age 0, -1, 131 and 1.5 and an unsupported gender and assert 422 with errors[].field 'age' / 'gender'"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-05T19:02:16Z",
     "failure_reason": null,
     "failure_layer": null
   },
@@ -2815,8 +2815,8 @@
       "Update as admin via the admin route and assert 200 and a new version",
       "Update as a doctor (both routes) and as another patient (admin route) and assert 403 with the version count unchanged"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T00:00:00Z",
     "failure_reason": null,
     "failure_layer": null
   },
@@ -2840,8 +2840,8 @@
       "Run the traceability check on the full suite and assert exit code 0",
       "Remove one NFR tag in a scratch run and assert a non-zero exit naming it"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942327+00:00",
     "failure_reason": null,
     "failure_layer": null
   }

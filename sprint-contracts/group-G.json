@@ -1,0 +1,341 @@
+{
+  "group": "G",
+  "stories": [
+    "E3-S3",
+    "E4-S2",
+    "E5-S2",
+    "E6-S1"
+  ],
+  "features": [
+    "F060",
+    "F061",
+    "F062",
+    "F063",
+    "F064",
+    "F083",
+    "F084",
+    "F085",
+    "F086",
+    "F087",
+    "F088",
+    "F099",
+    "F100",
+    "F101",
+    "F102",
+    "F103",
+    "F121",
+    "F122",
+    "F123"
+  ],
+  "mode": "lean",
+  "verification_mode": "local",
+  "contract_status": "final (evaluator-reviewed)",
+  "start_command": "cd backend && export DATABASE_PATH=./eval-g.db JWT_SECRET=eval-secret-at-least-32-bytes-long-0123456789 PROVIDER_TIMEZONE=UTC APP_ENV=dev && rm -f eval-g.db && uv run alembic upgrade head && uv run uvicorn telemed.api.app:create_app --factory --host 127.0.0.1 --port 8000 > ../eval-g-server.log 2>&1",
+  "frontend_start_command": "cd frontend && npm run dev -- --host 127.0.0.1 --port 5173 > ../eval-g-frontend.log 2>&1",
+  "start_note": "Backend :8000 and frontend Vite :5173 (Vite proxies /api to 127.0.0.1:8000). Setup as in group F (sqlite3 admin insert with argon2 hash, POST /api/admin/doctors, register patients, book via POST /api/appointments). Cancel-window checks (60:00 / 59:59 / 10 min) are arranged by sqlite3 UPDATE of slots.start_time/end_time for the target appointment; refund stub call count is not HTTP-observable and is verified via the pytest spy tests in backend/tests/integration/test_cancel.py. Seed check (E6-S1) uses a separate DB file: DATABASE_PATH=./eval-g-seed.db, alembic upgrade head, then uv run python scripts/seed.py twice.",
+  "backend_url": "http://localhost:8000",
+  "frontend_url": "http://localhost:5173",
+  "api_checks": [
+    {
+      "id": "G-API-0",
+      "story": "E3-S3",
+      "ac": "prerequisite",
+      "feature": "F060",
+      "note": "setup/regression: GET /health 200; admin login; onboard doctors A and B; register patients P1..P3; book slots to create BOOKED appointments. Failure blocks the group.",
+      "method": "GET",
+      "path": "/health",
+      "auth": "none",
+      "expect_status": 200
+    },
+    {
+      "id": "G-API-1",
+      "story": "E3-S3",
+      "ac": 1,
+      "feature": "F060",
+      "note": "patient books a slot; sqlite3 move its start_time so start - now is just over 60:00 (document slack); cancel. Verify appointment CANCELLED, slot AVAILABLE, exactly one CANCELLED event with actor_role PATIENT. Exact 60:00 boundary and refund spy count == 1 verified by pytest test_cancel.py (injected clock). Also verify the doctor-visible event list/DB has no second CANCELLED event.",
+      "method": "POST",
+      "path": "/api/appointments/{id}/cancel",
+      "auth": "patient owner",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "status": "CANCELLED"
+      }
+    },
+    {
+      "id": "G-API-2",
+      "story": "E3-S3",
+      "ac": 2,
+      "feature": "F061",
+      "note": "start_time at now+59m, and another already started: cancel -> 409 CHANGE_WINDOW_CLOSED; appointment stays BOOKED, slot BOOKED, no new event; refund spy 0 (pytest).",
+      "method": "POST",
+      "path": "/api/appointments/{id}/cancel",
+      "auth": "patient owner",
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "CHANGE_WINDOW_CLOSED"
+      }
+    },
+    {
+      "id": "G-API-3",
+      "story": "E3-S3",
+      "ac": 3,
+      "feature": "F062",
+      "note": "P2 cancels P1's appointment -> 404; nothing changed.",
+      "method": "POST",
+      "path": "/api/appointments/{id}/cancel",
+      "auth": "other patient",
+      "expect_status": 404
+    },
+    {
+      "id": "G-API-4",
+      "story": "E3-S3",
+      "ac": 4,
+      "feature": "F063",
+      "note": "doctor A cancels a BOOKED appointment starting in 10 minutes -> 200; appointment CANCELLED, slot BLOCKED, one CANCELLED event actor_role DOCTOR; refund spy count 1 (pytest). Doctor B -> 404; admin -> 403.",
+      "method": "POST",
+      "path": "/api/appointments/{id}/cancel",
+      "auth": "doctor owner",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "status": "CANCELLED"
+      }
+    },
+    {
+      "id": "G-API-5",
+      "story": "E3-S3",
+      "ac": 5,
+      "feature": "F064",
+      "note": "appointments set via sqlite3 to CHECKED_IN, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW: cancel as patient and as doctor -> 409 INVALID_APPOINTMENT_STATE; event count unchanged for each.",
+      "method": "POST",
+      "path": "/api/appointments/{id}/cancel",
+      "auth": "patient / doctor",
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "INVALID_APPOINTMENT_STATE"
+      }
+    },
+    {
+      "id": "G-API-6",
+      "story": "E3-S3",
+      "ac": "auth (API-24)",
+      "feature": "F060",
+      "note": "no token -> 401; unknown appointment id as an owner role -> 404.",
+      "method": "POST",
+      "path": "/api/appointments/{id}/cancel",
+      "auth": "none",
+      "expect_status": 401
+    },
+    {
+      "id": "G-API-7",
+      "story": "E4-S2",
+      "ac": 1,
+      "feature": "F083",
+      "note": "returns all users with role and active; ?role=DOCTOR only doctors; ?role=BAD -> 422; patient token -> 403. Each item carries role and active; deactivated users still listed with active=false.",
+      "method": "GET",
+      "path": "/api/admin/users",
+      "auth": "admin",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "items": "each has user_id, role, active",
+        "total": "int"
+      }
+    },
+    {
+      "id": "G-API-8",
+      "story": "E4-S2",
+      "ac": 2,
+      "feature": "F084",
+      "note": "deactivate patient P1 (has BOOKED appointment) -> 200 active=false; P1 login -> 401; P1's old token on GET /api/auth/me -> 401; appointment row still exists and doctor A can still transition it (check-in) -> 200.",
+      "method": "PUT",
+      "path": "/api/admin/users/{P1}/deactivate",
+      "auth": "admin",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "active": false
+      }
+    },
+    {
+      "id": "G-API-9",
+      "story": "E4-S2",
+      "ac": 3,
+      "feature": "F085",
+      "note": "doctor with BOOKED -> 409 ACTIVE_APPOINTMENTS_EXIST and still active; repeat with a doctor whose appointment is CHECKED_IN and another IN_PROGRESS (sqlite3) -> 409 each; doctor with only terminal appointments -> 200 and absent from GET /api/doctors.",
+      "method": "PUT",
+      "path": "/api/admin/users/{doctor}/deactivate",
+      "auth": "admin",
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "ACTIVE_APPOINTMENTS_EXIST"
+      }
+    },
+    {
+      "id": "G-API-10",
+      "story": "E4-S2",
+      "ac": 4,
+      "feature": "F086",
+      "note": "admin deactivates own user_id -> 409 CANNOT_DEACTIVATE_SELF; sqlite3 confirms active=1.",
+      "method": "PUT",
+      "path": "/api/admin/users/{admin}/deactivate",
+      "auth": "admin",
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "CANNOT_DEACTIVATE_SELF"
+      }
+    },
+    {
+      "id": "G-API-11",
+      "story": "E4-S2",
+      "ac": 5,
+      "feature": "F087",
+      "note": "reactivate P1 -> 200 active=true; P1 login succeeds; reactivated doctor reappears in GET /api/doctors; unknown id -> 404.",
+      "method": "PUT",
+      "path": "/api/admin/users/{id}/reactivate",
+      "auth": "admin",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "active": true
+      }
+    },
+    {
+      "id": "G-API-12",
+      "story": "E4-S2",
+      "ac": 6,
+      "feature": "F088",
+      "note": "PUT with changed full_name/age/gender/phone -> 200 PatientProfile; sqlite3: profile version rows +1, earlier rows unchanged, changed_by_user_id = admin. Non-patient id -> 404; patient token -> 403; invalid field -> 422.",
+      "method": "PUT",
+      "path": "/api/admin/patients/{patient_id}/profile",
+      "auth": "admin",
+      "expect_status": 200
+    },
+    {
+      "id": "G-API-13",
+      "story": "E6-S1",
+      "ac": "1-3",
+      "features": [
+        "F121",
+        "F122",
+        "F123"
+      ],
+      "note": "on a fresh DB run cd backend && uv run python scripts/seed.py twice. After run 1: 1 admin, >=3 doctors with distinct specialties, >=5 patients (F121). After run 2: user and slot counts identical (F122). All seeded emails end @example.test; all slots within the next 14 days (F123). Also run pytest backend/tests/integration/test_seed.py. Seeded admin can log in.",
+      "method": "n/a (CLI + sqlite3)",
+      "path": "backend/scripts/seed.py",
+      "auth": "n/a",
+      "expect_status": "exit 0 on both runs; counts as stated"
+    },
+    {
+      "id": "G-API-14",
+      "story": "E3-S3",
+      "ac": "2",
+      "feature": "F061",
+      "note": "patient cancels an appointment whose start_time is already in the past -> 409 CHANGE_WINDOW_CLOSED; status unchanged, no event (split from G-API-2 so both AC2 branches are asserted separately).",
+      "method": "POST",
+      "path": "/api/appointments/{id}/cancel",
+      "auth": "patient owner",
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "CHANGE_WINDOW_CLOSED"
+      }
+    }
+  ],
+  "playwright_checks": [
+    {
+      "id": "G-PW-1280",
+      "story": "E5-S2",
+      "features": [
+        "F099",
+        "F100",
+        "F101",
+        "F102",
+        "F103"
+      ],
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "start_url": "http://localhost:5173/login",
+      "steps": [
+        "log in as a registered/seeded patient (redirects to /doctors)",
+        "F099: search page shows specialty, language, date-range filters and a sort control; cards list fee such as '500.00'; a filter matching nothing shows the empty state",
+        "F099: choosing a specialty filter and a language filter narrows the cards to matching doctors; changing the sort control reorders the cards; the date-range filter is operable",
+        "F100: open a doctor card; detail page shows open slots for the next 14 days grouped by date, times in browser-local zone with abbreviation (e.g. '10:30 IST' or 'UTC')",
+        "F101: select a slot and confirm; confirmation shows doctor, local time and fee",
+        "F102: book the same slot via API as another patient first, then confirm in UI; inline 409 message appears and slot list refreshes without the taken slot",
+        "F103 (desktop): no horizontal overflow (scrollWidth <= clientWidth) on search, detail, confirmation"
+      ],
+      "screenshots": [
+        "g-search-1280.png",
+        "g-detail-1280.png",
+        "g-confirm-1280.png"
+      ]
+    },
+    {
+      "id": "G-PW-375",
+      "story": "E5-S2",
+      "features": [
+        "F099",
+        "F100",
+        "F101",
+        "F102",
+        "F103"
+      ],
+      "viewport": {
+        "width": 375,
+        "height": 812
+      },
+      "start_url": "http://localhost:5173/login",
+      "steps": [
+        "repeat the full G-PW-1280 flow (search, filters, sort, detail, slot pick, confirm, 409 inline refresh) at 375px",
+        "F103: document.documentElement.scrollWidth <= clientWidth on search, detail and confirmation pages (no horizontal scroll)",
+        "F103: every visible interactive control (button, a, input, select, slot buttons, filters, sort) has bounding box >= 44x44 CSS px; list any offender with selector and size"
+      ],
+      "screenshots": [
+        "g-search-375.png",
+        "g-detail-375.png",
+        "g-confirm-375.png"
+      ]
+    }
+  ],
+  "design_checks": [],
+  "architecture_checks": {
+    "files_must_exist": [
+      "backend/src/telemed/service/cancellation_service.py",
+      "backend/src/telemed/service/user_admin_service.py",
+      "backend/src/telemed/service/seed_service.py",
+      "backend/scripts/seed.py",
+      "backend/tests/integration/test_cancel.py",
+      "backend/tests/integration/test_admin_users.py",
+      "backend/tests/integration/test_seed.py",
+      "frontend/src/api/doctors.ts",
+      "frontend/src/api/appointments.ts",
+      "frontend/src/hooks/useDoctors.ts",
+      "frontend/src/hooks/useSlots.ts",
+      "frontend/src/hooks/useBooking.ts",
+      "frontend/src/app/pages/patient/DoctorSearchPage.tsx",
+      "frontend/src/app/pages/patient/DoctorDetailPage.tsx",
+      "frontend/src/app/pages/patient/BookingConfirmationPage.tsx",
+      "frontend/src/components/SlotPicker.tsx",
+      "frontend/src/components/DoctorCard.tsx",
+      "frontend/tests/unit/booking-409.test.tsx"
+    ],
+    "files_must_not_exist": [],
+    "content_rules": [
+      "E3-S3: cancel route guarded by require_roles(PATIENT, DOCTOR); admin 403; non-owner 404",
+      "E3-S3: patient window check is >= 60:00 against an injected clock; status update, slot release (AVAILABLE for patient, BLOCKED for doctor) and CANCELLED event with actor_role occur in one transaction; refund called once after commit through the overridable PaymentService dependency and never on refusal",
+      "E3-S3: CHANGE_WINDOW_CLOSED and INVALID_APPOINTMENT_STATE map to 409; no SQL in the router",
+      "E4-S2: self-deactivation and active-appointment checks live in user_admin_service; auth dependency rejects inactive users on every request (existing tokens 401); admin routes require ADMIN",
+      "E4-S2: admin profile PUT inserts a new profile version (append-only, earlier rows never UPDATEd) with changed_by_user_id",
+      "E5-S2: frontend calls the API only via src/api/*.ts clients and hooks; fee rendered as the API string (no parseFloat/toFixed on money); slot times formatted with Intl.DateTimeFormat in browser-local zone with short timeZoneName",
+      "E5-S2: routes.tsx replaces the ResourceShell placeholder for /doctors and /doctors/:doctor_id with the new pages; 409 handling refetches slots and shows an inline message (no alert, no console.log)",
+      "E5-S2: patient controls sized >= 44px (min-h-11/min-w-11 or equivalent), mobile-first layout",
+      "E6-S1: seed idempotent (existence checks on email), slots created through the slot generator service, all emails @example.test, no real secrets, layered via seed_service"
+    ]
+  },
+  "review_notes": [
+    "Proposed by generator (lean); pending evaluator review. Derived from stories E3-S3, E4-S2, E5-S2, E6-S1, api-contracts API-09..11, 17..20, 24 and features.json.",
+    "Story AC5 names InvalidAppointmentStateException; the API contract error code is INVALID_APPOINTMENT_STATE (API-24).",
+    "Exact 60:00 / 59:59 boundary is timing-sensitive over HTTP; rely on the clock-injected pytest test for the boundary and use sqlite3 margins live.",
+    "Booking confirmation route path is not fixed in the spec; follow in-app navigation rather than a hardcoded URL.",
+    "Out of scope: reschedule (E3-S4), my-appointments (E4-S3), doctor-side UI.",
+    "Evaluator review: added G-API-14 (past-start cancel), CHECKED_IN/IN_PROGRESS doctor deactivation in G-API-9, functional filter/sort step in G-PW-1280. All other checks trace to ACs or api-contracts API-17..20, 24; none removed."
+  ]
+}
