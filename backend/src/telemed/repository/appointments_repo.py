@@ -67,3 +67,32 @@ def count_open_for_doctor(session: Session, doctor_id: UserId) -> int:
         )
         or 0
     )
+
+
+def repoint_slot(
+    session: Session, appointment_id: AppointmentId, old_slot_id: SlotId, new_slot_id: SlotId,
+    now: datetime,
+) -> bool:
+    """Single conditional UPDATE moving a BOOKED appointment from old to new slot."""
+    stmt = (
+        update(Appointment)
+        .where(
+            Appointment.appointment_id == appointment_id, Appointment.slot_id == old_slot_id,
+            Appointment.status == AppointmentStatus.BOOKED.value,
+        )
+        .values(slot_id=new_slot_id, updated_at=now)
+    )
+    return cast(CursorResult[Any], session.execute(stmt)).rowcount == 1
+
+
+def list_for_doctor_between(
+    session: Session, doctor_id: UserId, start: datetime, end: datetime
+) -> list[tuple[domain.Appointment, datetime, datetime]]:
+    """The doctor's appointments (all statuses) with slot start in [start, end), by start."""
+    rows = session.execute(
+        select(Appointment, Slot.start_time, Slot.end_time)
+        .join(Slot, Slot.slot_id == Appointment.slot_id)
+        .where(Appointment.doctor_id == doctor_id, Slot.start_time >= start, Slot.start_time < end)
+        .order_by(Slot.start_time, Appointment.appointment_id)
+    ).all()
+    return [(appointment_to_domain(r[0]), r[1], r[2]) for r in rows]

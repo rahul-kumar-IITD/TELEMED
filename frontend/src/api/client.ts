@@ -73,4 +73,5 @@ export async function request<T>(method: string, path: string, opts: RequestOpti
 export const api = {
   get: <T>(path: string, signal?: AbortSignal) => request<T>("GET", path, { signal }),
   post: <T>(path: string, body: unknown, auth = true) => request<T>("POST", path, { body, auth }),
+  put: <T>(path: string, body?: unknown) => request<T>("PUT", path, { body }),
 };

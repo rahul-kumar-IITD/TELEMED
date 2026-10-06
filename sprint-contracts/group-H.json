@@ -1,0 +1,337 @@
+{
+  "group": "H",
+  "stories": [
+    "E3-S4",
+    "E3-S5",
+    "E5-S5"
+  ],
+  "features": [
+    "F065",
+    "F066",
+    "F067",
+    "F068",
+    "F069",
+    "F070",
+    "F071",
+    "F072",
+    "F073",
+    "F074",
+    "F075",
+    "F076",
+    "F116",
+    "F117",
+    "F118",
+    "F119",
+    "F120"
+  ],
+  "mode": "lean",
+  "verification_mode": "local",
+  "contract_status": "final (evaluator-reviewed)",
+  "start_command": "cd backend && export DATABASE_PATH=./eval-h.db JWT_SECRET=eval-secret-at-least-32-bytes-long-0123456789 PROVIDER_TIMEZONE=Asia/Kolkata APP_ENV=dev && rm -f eval-h.db && uv run alembic upgrade head && uv run uvicorn telemed.api.app:create_app --factory --host 127.0.0.1 --port 8000 > ../eval-h-server.log 2>&1",
+  "frontend_start_command": "cd frontend && npm run dev -- --host 127.0.0.1 --port 5173 > ../eval-h-frontend.log 2>&1",
+  "start_note": "Backend :8000 and Vite :5173 (proxies /api to 127.0.0.1:8000). Setup as in group G (sqlite3 admin insert with argon2 hash, POST /api/admin/doctors for doctors A and B with several slots each, register patients P1..P2, book via POST /api/appointments). PROVIDER_TIMEZONE=Asia/Kolkata so the queue day-boundary check (F074) is meaningful. Time-dependent states (60:00 boundary, started slots, 14-day window, CHECKED_IN/IN_PROGRESS/COMPLETED/CANCELLED/NO_SHOW) are arranged by sqlite3 UPDATE of slots.start_time/end_time and appointments.status with safe margins. Exact 60:00 vs 59:59 boundary, injected-failure rollback (F070) and NO_SHOW-after-start via advanced clock are verified by the pytest tests (backend/tests/integration/test_reschedule.py, test_lifecycle.py, test_queue.py, concurrency/test_reschedule_race.py) using the injected clock; live checks use margins only. Admin UI checks (E5-S5) run against the live stack with seeded/created data; 422 and 409 UI states are produced by real API conditions where feasible (invalid slot_length, doctor with BOOKED appointment) or by Playwright route interception.",
+  "backend_url": "http://localhost:8000",
+  "frontend_url": "http://localhost:5173",
+  "api_checks": [
+    {
+      "id": "H-API-0",
+      "story": "E3-S4",
+      "ac": "prerequisite",
+      "feature": "F065",
+      "note": "setup/regression: GET /health 200; admin login; onboard doctors A and B; register patients P1, P2; book BOOKED appointments. Failure blocks the group.",
+      "method": "GET",
+      "path": "/health",
+      "auth": "none",
+      "expect_status": 200
+    },
+    {
+      "id": "H-API-1",
+      "story": "E3-S4",
+      "ac": 1,
+      "feature": "F065",
+      "note": "P1 books slot X of doctor A (start > now+61m); reschedule to open slot Y of doctor A -> 200, same appointment_id, slot_id == Y, status BOOKED; sqlite3: slot Y BOOKED, slot X AVAILABLE; GET /api/appointments/{id} shows new start_time. Also verify exactly one appointment row exists for P1 (id unchanged, no new appointment).",
+      "method": "POST",
+      "path": "/api/appointments/{id}/reschedule",
+      "auth": "patient owner",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "appointment_id": "unchanged",
+        "slot_id": "new_slot_id",
+        "status": "BOOKED"
+      }
+    },
+    {
+      "id": "H-API-2",
+      "story": "E3-S4",
+      "ac": 2,
+      "feature": "F066",
+      "note": "after H-API-1, sqlite3 newest appointment_events row for the appointment is type RESCHEDULED with old_slot_id=X and new_slot_id=Y; exactly one RESCHEDULED event added.",
+      "method": "n/a (sqlite3 after POST)",
+      "path": "/api/appointments/{id}/reschedule",
+      "auth": "patient owner",
+      "expect_status": 200
+    },
+    {
+      "id": "H-API-3",
+      "story": "E3-S4",
+      "ac": 3,
+      "feature": "F067",
+      "note": "six invalid targets, each -> 409 SLOT_UNAVAILABLE: (a) slot already BOOKED by P2, (b) slot BLOCKED by doctor A, (c) slot already started (sqlite3 start in past), (d) slot beyond 14 days (sqlite3 start now+15d), (e) the appointment's current slot, (f) doctor B's slot. After each: appointment slot_id, both slots' statuses and event count unchanged. Nonexistent new_slot_id -> 404; missing/non-int body -> 422.",
+      "method": "POST",
+      "path": "/api/appointments/{id}/reschedule",
+      "auth": "patient owner",
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "SLOT_UNAVAILABLE"
+      }
+    },
+    {
+      "id": "H-API-4",
+      "story": "E3-S4",
+      "ac": 4,
+      "feature": "F068",
+      "note": "current slot start set via sqlite3 to now+59m -> 409 CHANGE_WINDOW_CLOSED, nothing changed (slots, slot_id, event count); start at now+62m -> 200 (document slack). Exact 59:59 (409) / 60:00 (200) boundary verified by pytest test_reschedule.py with injected clock; evaluator confirms that boundary test exists, is not skipped and passes.",
+      "method": "POST",
+      "path": "/api/appointments/{id}/reschedule",
+      "auth": "patient owner",
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "CHANGE_WINDOW_CLOSED"
+      }
+    },
+    {
+      "id": "H-API-5",
+      "story": "E3-S4",
+      "ac": 5,
+      "feature": "F069",
+      "note": "appointments set via sqlite3 to CHECKED_IN, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW (start > now+2h): reschedule each -> 409 INVALID_APPOINTMENT_STATE; no event added, slots unchanged.",
+      "method": "POST",
+      "path": "/api/appointments/{id}/reschedule",
+      "auth": "patient owner",
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "INVALID_APPOINTMENT_STATE"
+      }
+    },
+    {
+      "id": "H-API-6",
+      "story": "E3-S4",
+      "ac": "auth (API-25)",
+      "feature": "F065",
+      "note": "no token -> 401; doctor token -> 403; admin token -> 403; P2 reschedules P1's appointment -> 404; nothing changed.",
+      "method": "POST",
+      "path": "/api/appointments/{id}/reschedule",
+      "auth": "none / doctor / admin / other patient",
+      "expect_status": 401
+    },
+    {
+      "id": "H-API-7",
+      "story": "E3-S4",
+      "ac": 6,
+      "feature": "F070",
+      "note": "failure injection is not reachable over HTTP; run pytest backend/tests/integration/test_reschedule.py (injected failing event insert after target claim: non-2xx, slots and appointment unchanged) and concurrency/test_reschedule_race.py. Evaluator confirms the tests exist, are not skipped, and pass.",
+      "method": "n/a (pytest)",
+      "path": "backend/tests/integration/test_reschedule.py",
+      "auth": "n/a",
+      "expect_status": "pytest exit 0"
+    },
+    {
+      "id": "H-API-8",
+      "story": "E3-S5",
+      "ac": 1,
+      "feature": "F071",
+      "note": "doctor A: BOOKED -> CHECKED_IN -> IN_PROGRESS -> COMPLETED via POST status; each 200 with the new status; sqlite3: event count +1 per call, each with actor_role DOCTOR.",
+      "method": "POST",
+      "path": "/api/appointments/{id}/status",
+      "auth": "doctor owner",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "status": "requested status"
+      }
+    },
+    {
+      "id": "H-API-9",
+      "story": "E3-S5",
+      "ac": 2,
+      "feature": "F072",
+      "note": "BOOKED->IN_PROGRESS, BOOKED->COMPLETED, CHECKED_IN->CANCELLED, and any change from COMPLETED, CANCELLED, NO_SHOW -> 409 INVALID_APPOINTMENT_STATE; status and event count unchanged. Unknown status string -> 422. Also BOOKED->BOOKED (status BOOKED body) -> 409. pytest backend/tests/unit/test_state_machine.py must pass (full transition matrix).",
+      "method": "POST",
+      "path": "/api/appointments/{id}/status",
+      "auth": "doctor owner",
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "INVALID_APPOINTMENT_STATE"
+      }
+    },
+    {
+      "id": "H-API-10",
+      "story": "E3-S5",
+      "ac": 3,
+      "feature": "F073",
+      "note": "NO_SHOW on a BOOKED appointment whose start is in the future -> 409; after sqlite3 moves start into the past: NO_SHOW from BOOKED -> 200 and slot stays BOOKED; repeat from CHECKED_IN -> 200 slot BOOKED.",
+      "method": "POST",
+      "path": "/api/appointments/{id}/status",
+      "auth": "doctor owner",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "status": "NO_SHOW"
+      }
+    },
+    {
+      "id": "H-API-11",
+      "story": "E3-S5",
+      "ac": 4,
+      "feature": "F074",
+      "note": "with PROVIDER_TIMEZONE=Asia/Kolkata, doctor A has appointments at 23:30 IST on D and 00:30 IST on D+1 (sqlite3 slot times, i.e. 18:00Z D and 19:00Z D). GET queue?date=D contains only the 23:30 item; date=D+1 only the 00:30 item; items ordered ascending by start_time; other doctor's appointments absent; response has date, timezone, total; bad date -> 422; patient 403; admin 403; no token 401. Every item carries allowed_actions for DOCTOR (E3-S5 AC5); queue includes all statuses (CANCELLED/NO_SHOW items present) per API-15; default date (omitted) returns today in provider zone with 200.",
+      "method": "GET",
+      "path": "/api/doctors/me/queue?date=YYYY-MM-DD",
+      "auth": "doctor",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "date": "string",
+        "timezone": "Asia/Kolkata",
+        "items": "list of Appointment with allowed_actions",
+        "total": "int"
+      }
+    },
+    {
+      "id": "H-API-12",
+      "story": "E3-S5",
+      "ac": 5,
+      "feature": "F075",
+      "note": "doctor GET BOOKED appointment before start: allowed_actions contains CHECKED_IN and CANCEL, not NO_SHOW; after sqlite3 start moved to past: contains NO_SHOW; CHECKED_IN -> IN_PROGRESS (+ NO_SHOW after start); IN_PROGRESS -> COMPLETED; COMPLETED/CANCELLED/NO_SHOW -> []. Patient view of BOOKED far-future: [CANCEL, RESCHEDULE]; admin view always [].",
+      "method": "GET",
+      "path": "/api/appointments/{id}",
+      "auth": "doctor owner",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "allowed_actions": "per state machine and clock"
+      }
+    },
+    {
+      "id": "H-API-13",
+      "story": "E3-S5",
+      "ac": 6,
+      "feature": "F076",
+      "note": "doctor B POST status on doctor A's appointment -> 404; patient -> 403; admin -> 403; no token -> 401; status unchanged and no event in each case.",
+      "method": "POST",
+      "path": "/api/appointments/{id}/status",
+      "auth": "other doctor / patient / admin",
+      "expect_status": 404
+    },
+    {
+      "id": "H-API-14",
+      "story": "E3-S5",
+      "ac": "API-26 (CANCELLED via status)",
+      "feature": "F072",
+      "note": "BOOKED appointment, doctor owner POST status CANCELLED -> 200 status CANCELLED; slot becomes BLOCKED (not AVAILABLE); exactly one event with actor_role DOCTOR. Contract-derived (api-contracts API-26); AC2 only covers CHECKED_IN->CANCELLED refusal.",
+      "method": "POST",
+      "path": "/api/appointments/{id}/status",
+      "auth": "doctor owner",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "status": "CANCELLED"
+      }
+    },
+    {
+      "id": "H-API-15",
+      "story": "E3-S4",
+      "ac": "4 (after start)",
+      "feature": "F068",
+      "note": "BOOKED appointment whose current slot start was moved via sqlite3 into the past: reschedule to an open slot -> 409 CHANGE_WINDOW_CLOSED (api-contracts API-25/error table: 'or after start'); nothing changed.",
+      "method": "POST",
+      "path": "/api/appointments/{id}/reschedule",
+      "auth": "patient owner",
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "CHANGE_WINDOW_CLOSED"
+      }
+    },
+    {
+      "id": "H-API-16",
+      "story": "E3-S5",
+      "ac": "2 (no event on refusal)",
+      "feature": "F072",
+      "note": "pytest backend/tests/integration/test_lifecycle.py and test_queue.py run, are not skipped, and pass (injected-clock NO_SHOW, event-count assertions, queue day boundary).",
+      "method": "n/a (pytest)",
+      "path": "backend/tests/integration/test_lifecycle.py",
+      "auth": "n/a",
+      "expect_status": "pytest exit 0"
+    }
+  ],
+  "playwright_checks": [
+    {
+      "id": "H-PW-1280",
+      "story": "E5-S5",
+      "features": [
+        "F116",
+        "F117",
+        "F118",
+        "F119",
+        "F120"
+      ],
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "start_url": "http://localhost:5173/login",
+      "steps": [
+        "log in as the admin; reach the onboarding screen via in-app navigation (route path not fixed by spec)",
+        "F116: form has specialty, languages, fee inputs and a template-row editor; add two rows (weekday, start, end, slot length); submit valid data -> success view shows the new doctor (name/email, specialty); GET /api/doctors afterwards lists the doctor; (AC1) the fee is entered as a decimal string and shown unchanged",
+        "F117: submit a row with an invalid slot length (e.g. 09:00-10:00 with 25 min) or end before start -> the server 422 message renders next to that row's field; all previously entered values (email, specialty, languages, fee, all rows) remain",
+        "F118: open the user list; role filter set to Doctor shows only doctors, Patient only patients; inactive rows show Reactivate, active rows show Deactivate; the admin's own row has Deactivate disabled",
+        "F118: deactivate then reactivate a patient via the UI; row label/status toggles; GET /api/admin/users agrees",
+        "F119: Deactivate a doctor who has a BOOKED appointment -> message stating the doctor has active appointments is displayed; the row still shows Deactivate / active status",
+        "F120: click Edit profile on a patient row; form opens prefilled; change full_name/age/gender/phone and save -> success message; list/profile reflects the change; invalid age (e.g. 0) shows a field error and no success message",
+        "no horizontal overflow (scrollWidth <= clientWidth) on onboarding and user list at 1280px (E5-S5 is designed 1280px-first)"
+      ],
+      "screenshots": [
+        "h-onboard-1280.png",
+        "h-onboard-422-1280.png",
+        "h-users-1280.png",
+        "h-edit-profile-1280.png"
+      ]
+    }
+  ],
+  "design_checks": [],
+  "architecture_checks": {
+    "files_must_exist": [
+      "backend/src/telemed/service/reschedule_service.py",
+      "backend/src/telemed/service/lifecycle_service.py",
+      "backend/src/telemed/service/allowed_actions.py",
+      "backend/tests/integration/test_reschedule.py",
+      "backend/tests/integration/test_lifecycle.py",
+      "backend/tests/integration/test_queue.py",
+      "backend/tests/unit/test_state_machine.py",
+      "backend/tests/concurrency/test_reschedule_race.py",
+      "frontend/src/api/admin.ts",
+      "frontend/src/hooks/useUsers.ts",
+      "frontend/src/hooks/useOnboard.ts",
+      "frontend/src/app/pages/admin/OnboardDoctorPage.tsx",
+      "frontend/src/app/pages/admin/UserListPage.tsx",
+      "frontend/src/app/pages/admin/EditPatientProfileDialog.tsx",
+      "frontend/src/components/TemplateRows.tsx",
+      "frontend/tests/unit/onboard-errors.test.tsx"
+    ],
+    "files_must_not_exist": [],
+    "content_rules": [
+      "E3-S4: reschedule route guarded by require_roles(PATIENT); doctor/admin 403; non-owner and unknown new_slot_id 404; SLOT_UNAVAILABLE, CHANGE_WINDOW_CLOSED, INVALID_APPOINTMENT_STATE map to 409; no SQL in the router",
+      "E3-S4: target claim is a conditional UPDATE (status AVAILABLE, window, same active doctor, different slot) requiring exactly 1 row; claim, old-slot release, appointments.slot_id repoint and RESCHEDULED event (old_slot_id/new_slot_id) occur in one transaction that rolls back on any failure; 60-minute check uses the injected clock with >= 60:00 allowed",
+      "E3-S5: transitions validated by types/state_machine.py (no transition logic duplicated in router or frontend); exactly one event with actor_role DOCTOR per valid transition and none on refusal; NO_SHOW requires now >= start_time via injected clock and leaves slot BOOKED; CANCELLED from BOOKED delegates to cancellation_service behaviour (slot BLOCKED, refund once)",
+      "E3-S5: queue day window computed from PROVIDER_TIMEZONE [00:00, 24:00) converted to UTC, ordered by start_time, caller's appointments only; /api/doctors/me/queue registered before /api/doctors/{doctor_id}",
+      "E3-S5: allowed_actions computed in service/allowed_actions.py per role and clock (PATIENT, DOCTOR, ADMIN matrix per api-contracts); only the appointment's doctor may transition (other doctor 404, patient/admin 403)",
+      "E5-S5: frontend calls the API only via src/api/admin.ts and hooks; routes.tsx replaces any ADMIN placeholder with OnboardDoctorPage and UserListPage; fee sent as a string (no parseFloat/toFixed on money)",
+      "E5-S5: 422 errors[].field paths (e.g. availability_templates[0].slot_length_minutes) are mapped to the matching template-row fields; form state is preserved on error; 409 ACTIVE_APPOINTMENTS_EXIST shown inline (no alert, no console.log); Deactivate disabled for the logged-in admin's own row"
+    ]
+  },
+  "review_notes": [
+    "Proposed by generator (lean); pending evaluator review. Derived from stories E3-S4, E3-S5, E5-S5, api-contracts API-09/15..20, 24..26, component-map and features.json (F065-F076, F116-F120).",
+    "Story E3-S4 AC3 says 409 for all invalid targets; api-contracts API-25 specifies code SLOT_UNAVAILABLE, and 404 for a nonexistent new_slot_id (checked separately in H-API-3).",
+    "Story E3-S5 AC2 names InvalidAppointmentStateException; the API contract error code is INVALID_APPOINTMENT_STATE.",
+    "Exact 60:00/59:59 boundary (F068), injected-failure rollback (F070) and clock-advanced NO_SHOW (F073) are not reliably HTTP-observable; backed by pytest with injected clock, live checks use sqlite3 margins.",
+    "F074 queue boundary is meaningful only with PROVIDER_TIMEZONE != UTC, so the start command sets Asia/Kolkata.",
+    "E5-S5 admin route paths are not fixed in the spec; evaluator should follow in-app navigation. E5-S5 UI feature steps mention a mocked API; live verification may use real API conditions or Playwright route interception.",
+    "Out of scope: doctor-side UI for the queue/lifecycle (E5-S4), patient reschedule UI (E5-S3), my-appointments (E4-S3 already done).",
+    "Evaluator review: removed 'no console errors' from PW step (no AC/contract basis) and the 'no new backend files' content rule (no AC basis). Added H-API-14 (API-26 CANCELLED via status -> slot BLOCKED), H-API-15 (reschedule after start -> CHANGE_WINDOW_CLOSED), H-API-16 (lifecycle/queue pytest), plus queue allowed_actions/all-status/default-date assertions, state-machine unit test, and 60:00 boundary test confirmation. All other checks trace to E3-S4 AC1-6, E3-S5 AC1-6, E5-S5 AC1-5 or api-contracts API-15/18/25/26."
+  ]
+}

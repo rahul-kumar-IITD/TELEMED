@@ -4,6 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from telemed.types import domain
+from telemed.types.enums import AppointmentStatus
 from telemed.types.money import format_fee
 
 
@@ -50,4 +51,26 @@ class AppointmentOut(BaseModel):
             fee=format_fee(appt.fee), allowed_actions=list(view.allowed_actions),
             join_url=view.join_url, change_deadline=view.change_deadline,
             created_at=appt.created_at, updated_at=appt.updated_at,
+        )
+
+
+class RescheduleRequest(BaseModel):
+    new_slot_id: int = Field(strict=True)
+
+
+class StatusRequest(BaseModel):
+    status: AppointmentStatus
+
+
+class QueueResponse(BaseModel):
+    date: str
+    timezone: str
+    items: list[AppointmentOut]
+    total: int
+
+    @classmethod
+    def from_domain(cls, queue: domain.DoctorQueue) -> "QueueResponse":
+        return cls(
+            date=queue.date, timezone=queue.timezone,
+            items=[AppointmentOut.from_domain(v) for v in queue.items], total=len(queue.items),
         )

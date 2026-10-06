@@ -20,7 +20,9 @@ from telemed.service.integrations.stubs import (
     StubPrescriptionService,
     StubVideoService,
 )
+from telemed.service.lifecycle_service import LifecycleService
 from telemed.service.profile_service import ProfileService
+from telemed.service.reschedule_service import RescheduleService
 from telemed.service.slot_generator import SlotGenerator
 from telemed.service.unit_of_work import UnitOfWork
 from telemed.service.user_admin_service import UserAdminService
@@ -38,6 +40,8 @@ class Container:
     doctors: DoctorService
     booking: BookingService
     cancellation: CancellationService
+    reschedule: RescheduleService
+    lifecycle: LifecycleService
     user_admin: UserAdminService
     slot_generator: SlotGenerator
     video: VideoService
@@ -51,6 +55,7 @@ def build_container(runtime: Runtime, clock: Clock | None = None) -> Container:
     the_clock = clock if clock is not None else SystemClock()
     uow = UnitOfWork(create_db_engine(runtime.database_path, runtime.busy_timeout_ms))
     slot_generator = SlotGenerator(uow, the_clock, runtime.provider_timezone)
+    cancellation = CancellationService(uow, the_clock)
     return Container(
         runtime=runtime,
         clock=the_clock,
@@ -59,7 +64,9 @@ def build_container(runtime: Runtime, clock: Clock | None = None) -> Container:
         profiles=ProfileService(uow, the_clock),
         doctors=DoctorService(uow, the_clock, slot_generator),
         booking=BookingService(uow, the_clock),
-        cancellation=CancellationService(uow, the_clock),
+        cancellation=cancellation,
+        reschedule=RescheduleService(uow, the_clock),
+        lifecycle=LifecycleService(uow, the_clock, cancellation, runtime.provider_timezone),
         user_admin=UserAdminService(uow, the_clock),
         slot_generator=slot_generator,
         video=StubVideoService(runtime.video_base_url),

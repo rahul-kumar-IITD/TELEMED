@@ -4,6 +4,8 @@ import { homeForRole, PATHS } from "../config/routes";
 import { useAuth } from "../hooks/useAuth";
 import type { Role } from "../types/contracts";
 import { AppLayout } from "./layouts/AppLayout";
+import { OnboardDoctorPage } from "./pages/admin/OnboardDoctorPage";
+import { UserListPage } from "./pages/admin/UserListPage";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { RegisterPage } from "./pages/auth/RegisterPage";
 import { BookingConfirmationPage } from "./pages/patient/BookingConfirmationPage";
@@ -52,10 +54,8 @@ export function AppRoutes() {
           />
         </Route>
         <Route element={<RequireRole roles={["ADMIN"]} />}>
-          <Route
-            path="admin/users"
-            element={<ResourceShell title="Users" path="/api/admin/users" emptyMessage="No users found." />}
-          />
+          <Route path="admin/users" element={<UserListPage />} />
+          <Route path="admin/doctors/new" element={<OnboardDoctorPage />} />
         </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Route>

@@ -80,21 +80,24 @@ def get_owned(session: Session, slot_id: SlotId, doctor_id: UserId) -> domain.Sl
     return None if row is None else slot_to_domain(row)
 
 
-def claim(session: Session, slot_id: SlotId, now: datetime, horizon: datetime) -> bool:
+def claim(
+    session: Session, slot_id: SlotId, now: datetime, horizon: datetime,
+    doctor_id: UserId | None = None,
+) -> bool:
     """Atomically AVAILABLE -> BOOKED if the slot is in (now, horizon) and its doctor is active.
 
+    When `doctor_id` is given the slot must also belong to that doctor (reschedule).
     One conditional UPDATE; True only when exactly one row changed.
     """
     active_doctors = select(User.user_id).where(User.active == 1)
-    stmt = (
-        update(Slot)
-        .where(
-            Slot.slot_id == slot_id, Slot.status == "AVAILABLE",
-            Slot.start_time > now, Slot.start_time < horizon,
-            Slot.doctor_id.in_(active_doctors),
-        )
-        .values(status="BOOKED", updated_at=now)
-    )
+    conditions = [
+        Slot.slot_id == slot_id, Slot.status == "AVAILABLE",
+        Slot.start_time > now, Slot.start_time < horizon,
+        Slot.doctor_id.in_(active_doctors),
+    ]
+    if doctor_id is not None:
+        conditions.append(Slot.doctor_id == doctor_id)
+    stmt = update(Slot).where(*conditions).values(status="BOOKED", updated_at=now)
     return cast(CursorResult[Any], session.execute(stmt)).rowcount == 1
 
 

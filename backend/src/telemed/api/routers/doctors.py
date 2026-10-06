@@ -1,13 +1,23 @@
 """Doctor search and slot endpoints. Literal /me routes are registered before /{doctor_id}."""
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import AwareDatetime
 
-from telemed.api.deps import get_current_user, get_doctor_service, require_roles
+from telemed.api.deps import (
+    get_current_user,
+    get_doctor_service,
+    get_lifecycle_service,
+    get_video_service,
+    require_roles,
+)
+from telemed.api.schemas.appointments import QueueResponse
 from telemed.api.schemas.doctors import DoctorListResponse, DoctorSummaryOut
 from telemed.api.schemas.slots import SlotListResponse, SlotOut
 from telemed.service.doctor_service import DoctorService
+from telemed.service.integrations.interfaces import VideoService
+from telemed.service.lifecycle_service import LifecycleService
 from telemed.types import domain
 from telemed.types.domain import DoctorSearch
 from telemed.types.enums import DoctorSort, Role
@@ -44,6 +54,16 @@ def unblock_slot(
     service: DoctorService = Depends(get_doctor_service),
 ) -> SlotOut:
     return SlotOut.from_domain(service.unblock_slot(user.user_id, SlotId(slot_id)))
+
+
+@router.get("/me/queue")
+def my_queue(
+    day: Annotated[date | None, Query(alias="date")] = None,
+    user: domain.User = Depends(_doctor_only),
+    service: LifecycleService = Depends(get_lifecycle_service),
+    video: VideoService = Depends(get_video_service),
+) -> QueueResponse:
+    return QueueResponse.from_domain(service.queue(user, day, video))
 
 
 @router.get("")

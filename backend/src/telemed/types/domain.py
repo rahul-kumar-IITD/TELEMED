@@ -187,3 +187,12 @@ class AppointmentView:
     allowed_actions: tuple[str, ...]
     join_url: str | None
     change_deadline: datetime
+
+
+@dataclass(frozen=True)
+class DoctorQueue:
+    """A doctor's appointments for one calendar day in the provider timezone."""
+
+    date: str  # YYYY-MM-DD
+    timezone: str
+    items: tuple[AppointmentView, ...]

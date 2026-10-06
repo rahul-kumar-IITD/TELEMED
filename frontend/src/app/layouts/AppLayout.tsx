@@ -43,9 +43,14 @@ export function AppLayout() {
                 </NavLink>
               )}
               {session.role === "ADMIN" && (
-                <NavLink to={PATHS.adminUsers} className={linkClass}>
-                  Users
-                </NavLink>
+                <>
+                  <NavLink to={PATHS.adminUsers} className={linkClass}>
+                    Users
+                  </NavLink>
+                  <NavLink to={PATHS.adminOnboard} className={linkClass}>
+                    Onboard doctor
+                  </NavLink>
+                </>
               )}
               <button
                 type="button"

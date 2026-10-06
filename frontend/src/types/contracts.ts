@@ -106,3 +106,51 @@ export interface DoctorFilters {
   availableTo: string;
   sort: DoctorSort;
 }
+
+export interface AvailabilityTemplate {
+  weekday: number; // 0 = Monday
+  start_time: string; // HH:MM
+  end_time: string;
+  slot_length_minutes: number;
+}
+
+export interface OnboardDoctorRequest {
+  email: string;
+  initial_password: string;
+  full_name?: string;
+  specialty: string;
+  languages: string[];
+  fee: string; // decimal string, sent as typed
+  availability_templates: AvailabilityTemplate[];
+}
+
+export interface OnboardedDoctor {
+  doctor_id: number;
+  user_id: number;
+  email: string;
+  full_name: string;
+  specialty: string;
+  languages: string[];
+  fee: string;
+  availability_templates: (AvailabilityTemplate & { template_id: number })[];
+  slots_created: number;
+}
+
+export type RoleFilter = "" | Role;
+
+export interface PatientProfile {
+  patient_id: number;
+  version_number: number;
+  full_name: string;
+  age: number;
+  gender: Gender;
+  phone: string;
+  updated_at: string;
+}
+
+export interface ProfileUpdate {
+  full_name: string;
+  age: number;
+  gender: Gender;
+  phone: string;
+}

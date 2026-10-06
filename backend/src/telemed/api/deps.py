@@ -14,7 +14,9 @@ from telemed.service.integrations.interfaces import (
     PrescriptionService,
     VideoService,
 )
+from telemed.service.lifecycle_service import LifecycleService
 from telemed.service.profile_service import ProfileService
+from telemed.service.reschedule_service import RescheduleService
 from telemed.service.user_admin_service import UserAdminService
 from telemed.types import domain
 from telemed.types.enums import Role
@@ -46,6 +48,14 @@ def get_cancellation_service(
     container: Container = Depends(get_container),
 ) -> CancellationService:
     return container.cancellation
+
+
+def get_reschedule_service(container: Container = Depends(get_container)) -> RescheduleService:
+    return container.reschedule
+
+
+def get_lifecycle_service(container: Container = Depends(get_container)) -> LifecycleService:
+    return container.lifecycle
 
 
 def get_user_admin_service(

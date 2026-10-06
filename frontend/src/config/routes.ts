@@ -6,6 +6,7 @@ export const PATHS = {
   doctors: "/doctors",
   queue: "/queue",
   adminUsers: "/admin/users",
+  adminOnboard: "/admin/doctors/new",
 } as const;
 
 export const doctorRoute = (doctorId: number | string) => `/doctors/${doctorId}`;
@@ -29,5 +30,6 @@ export const MESSAGES = {
   invalidCredentials: "Invalid email or password.",
   duplicateEmail: "An account with this email already exists.",
   slotTaken: "That slot is no longer available. The slot list has been refreshed.",
+  activeAppointments: "This doctor has active appointments and cannot be deactivated. The status is unchanged.",
   sessionExpired: "Your session expired. Please log in again.",
 } as const;
