@@ -763,7 +763,7 @@
       "GET /api/doctors/me/slots for the next 7 days",
       "Assert every returned slot belongs to doctor A and each has a status field"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -783,7 +783,7 @@
       "Assert 200",
       "Read the slot and assert BLOCKED"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -803,7 +803,7 @@
       "Assert 409",
       "Assert the slot is still BOOKED and the appointment still BOOKED"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -821,7 +821,7 @@
       "Block a slot then PUT unblock and assert 200 and AVAILABLE",
       "PUT unblock on an AVAILABLE slot and assert 409"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -839,7 +839,7 @@
       "Login as doctor A and PUT block on doctor B's slot id, assert 404",
       "Login as patient and PUT block, assert 403"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -858,7 +858,7 @@
       "GET with specialty filter and assert every result matches",
       "GET with language filter and assert every result matches"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -878,7 +878,7 @@
       "GET with a day-3 range",
       "Assert doctor A is absent and a doctor with open day-3 slots is present"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -898,7 +898,7 @@
       "GET ?sort=fee and assert nondecreasing fee",
       "GET ?sort=name and assert alphabetical order"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -919,7 +919,7 @@
       "Assert the deactivated doctor is absent",
       "Assert each result has fee matching ^\\d+\\.\\d{2}$ and an earliest_slot field"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -939,7 +939,7 @@
       "GET /api/doctors/{id}/slots",
       "Assert only the AVAILABLE future slots are returned"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -958,7 +958,7 @@
       "GET /api/doctors with no token and assert 401",
       "GET /api/doctors/{id}/slots with no token and assert 401"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,

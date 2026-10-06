@@ -1,0 +1,382 @@
+{
+  "group": "E",
+  "stories": [
+    "E2-S3",
+    "E2-S4"
+  ],
+  "features": [
+    "F038",
+    "F039",
+    "F040",
+    "F041",
+    "F042",
+    "F043",
+    "F044",
+    "F045",
+    "F046",
+    "F047",
+    "F048"
+  ],
+  "mode": "lean",
+  "verification_mode": "local",
+  "contract_status": "final (evaluator-reviewed)",
+  "start_command": "cd backend && export DATABASE_PATH=./eval-e.db JWT_SECRET=eval-secret-at-least-32-bytes-long-0123456789 PROVIDER_TIMEZONE=UTC APP_ENV=dev && rm -f eval-e.db && uv run alembic upgrade head && uv run uvicorn telemed.api.app:create_app --factory --host 127.0.0.1 --port 8000 > ../eval-e-server.log 2>&1",
+  "start_note": "Backend :8000 only (API-only group, no frontend). DATABASE_PATH is relative to backend/, so sqlite3 inspection targets backend/eval-e.db. JWT_SECRET must be exported (min 32 bytes). No admin bootstrap endpoint: insert an admin via sqlite3 (argon2 hash from uv run python, same technique as groups C/D), log in via POST /api/auth/login. Doctors are created via POST /api/admin/doctors (E2-S2), which also generates 14 days of slots; use at least 3 doctors (A, B, C) with differing specialty (e.g. Cardiology vs Dermatology), languages (e.g. [hi,en] vs [en]), fee (e.g. 300.00, 500.00, 750.00) and full_name. Patients register via POST /api/auth/register. Booking (POST /api/appointments, E3-S2) does NOT exist yet: to put a slot in BOOKED state with an appointment (F040) the evaluator sets slots.status='BOOKED' and inserts an appointments row (plus a BOOKED event if the schema requires one) directly via sqlite3, then re-reads both after the call. Past slots (F047) and day-specific states (F044) are also arranged via sqlite3 UPDATEs on slots.start_time/status. Doctor deactivation uses the admin deactivate route if mounted, else sqlite3 UPDATE users SET active=0 on a doctor with no live appointments.",
+  "backend_url": "http://localhost:8000",
+  "api_checks": [
+    {
+      "id": "E-API-0",
+      "story": "E2-S3",
+      "ac": "prerequisite",
+      "feature": "F038",
+      "note": "setup/regression: GET /health -> 200; onboard doctors A, B, C via POST /api/admin/doctors (201, slots_created > 0); login each; register patient P and login. Failure blocks the group.",
+      "method": "GET",
+      "path": "/health",
+      "expect_status": 200
+    },
+    {
+      "id": "E-API-1a",
+      "story": "E2-S3",
+      "ac": 1,
+      "feature": "F038",
+      "note": "doctor A and doctor B both have slots. Login as A, GET with from=now (ISO, tz-aware, URL-encoded) and to=now+7d.",
+      "method": "GET",
+      "path": "/api/doctors/me/slots?from={now}&to={now+7d}",
+      "auth": "doctor A",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "items": "non-empty array of Slot {slot_id:int, doctor_id:int, start_time:ISO datetime, end_time:ISO datetime, status in AVAILABLE|BOOKED|BLOCKED}",
+        "items[*].doctor_id": "all equal A's user_id (none equal B's)",
+        "items order": "ascending by start_time",
+        "total": "equals len(items)"
+      }
+    },
+    {
+      "id": "E-API-1b",
+      "story": "E2-S3",
+      "ac": 1,
+      "feature": "F038",
+      "note": "range filtering and status visibility: after one slot is BLOCKED (E-API-2a) and one set BOOKED via sqlite, list again; blocked/booked slots appear with their actual status. A narrow from/to window returns only slots whose start_time lies inside it. No from/to defaults to now..now+14d. to < from -> 422; range > 31 days -> 422.",
+      "method": "GET",
+      "path": "/api/doctors/me/slots",
+      "auth": "doctor A",
+      "expect_status": "200 (valid ranges); 422 VALIDATION_ERROR (to<from, range>31d)"
+    },
+    {
+      "id": "E-API-2a",
+      "story": "E2-S3",
+      "ac": 2,
+      "feature": "F039",
+      "note": "pick an AVAILABLE slot S1 of doctor A, PUT block with no body, then confirm via sqlite3 (SELECT status FROM slots WHERE slot_id=S1) and via the E-API-1a listing.",
+      "method": "PUT",
+      "path": "/api/doctors/me/slots/{S1}/block",
+      "auth": "doctor A",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "slot_id": "S1",
+        "doctor_id": "A",
+        "status": "BLOCKED",
+        "start_time": "ISO datetime",
+        "end_time": "ISO datetime"
+      }
+    },
+    {
+      "id": "E-API-2b",
+      "story": "E2-S3",
+      "ac": 2,
+      "feature": "F039",
+      "note": "blocking an already BLOCKED slot is rejected and changes nothing (single conditional UPDATE, no state corruption).",
+      "method": "PUT",
+      "path": "/api/doctors/me/slots/{S1}/block",
+      "auth": "doctor A",
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "INVALID_SLOT_STATE",
+        "message": "string"
+      }
+    },
+    {
+      "id": "E-API-3",
+      "story": "E2-S3",
+      "ac": 3,
+      "feature": "F040",
+      "note": "slot S2 of doctor A set BOOKED with an appointment (status BOOKED) via sqlite3. Snapshot slot row and appointment row, PUT block as A, expect 409, then re-read: slot status still BOOKED, appointment status still BOOKED, appointment.slot_id unchanged, no new appointment_events rows.",
+      "method": "PUT",
+      "path": "/api/doctors/me/slots/{S2}/block",
+      "auth": "doctor A",
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "INVALID_SLOT_STATE"
+      }
+    },
+    {
+      "id": "E-API-4a",
+      "story": "E2-S3",
+      "ac": 4,
+      "feature": "F041",
+      "note": "S1 is BLOCKED (from E-API-2a). PUT unblock as A; verify via sqlite3 that status is AVAILABLE.",
+      "method": "PUT",
+      "path": "/api/doctors/me/slots/{S1}/unblock",
+      "auth": "doctor A",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "slot_id": "S1",
+        "status": "AVAILABLE"
+      }
+    },
+    {
+      "id": "E-API-4b",
+      "story": "E2-S3",
+      "ac": 4,
+      "feature": "F041",
+      "note": "unblock a non-BLOCKED slot: once on the now-AVAILABLE S1 and once on the BOOKED S2. Both 409, rows unchanged.",
+      "method": "PUT",
+      "path": "/api/doctors/me/slots/{S1 or S2}/unblock",
+      "auth": "doctor A",
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "INVALID_SLOT_STATE"
+      }
+    },
+    {
+      "id": "E-API-5a",
+      "story": "E2-S3",
+      "ac": 5,
+      "feature": "F042",
+      "note": "doctor A PUTs block (then unblock) on an AVAILABLE slot owned by doctor B. Slot id exists, so 404 (not 403/409) proves ownership is hidden. Verify via sqlite3 that B's slot is still AVAILABLE. Also 404 for a nonexistent slot id (e.g. 999999).",
+      "method": "PUT",
+      "path": "/api/doctors/me/slots/{B_slot}/block",
+      "auth": "doctor A",
+      "expect_status": 404,
+      "expect_body_fields": {
+        "code": "string (not found)",
+        "message": "string"
+      }
+    },
+    {
+      "id": "E-API-5b",
+      "story": "E2-S3",
+      "ac": 5,
+      "feature": "F042",
+      "note": "patient P calls block, unblock and GET /api/doctors/me/slots -> 403 each; admin also 403 (permission matrix); no token on block/unblock -> 401. Slot row unchanged.",
+      "method": "PUT",
+      "path": "/api/doctors/me/slots/{S1}/block",
+      "auth": "patient P",
+      "expect_status": 403
+    },
+    {
+      "id": "E-API-6a",
+      "story": "E2-S4",
+      "ac": 1,
+      "feature": "F043",
+      "note": "as patient P: GET ?specialty=Cardiology returns only doctors whose specialty is Cardiology (and includes A); case-insensitive (?specialty=cardiology gives same set); unknown specialty returns items [] total 0.",
+      "method": "GET",
+      "path": "/api/doctors?specialty=Cardiology",
+      "auth": "patient P",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "items": "array of DoctorSummary {doctor_id, full_name, specialty, languages[], fee, earliest_slot}",
+        "items[*].specialty": "all Cardiology",
+        "total": "equals len(items)"
+      }
+    },
+    {
+      "id": "E-API-6b",
+      "story": "E2-S4",
+      "ac": 1,
+      "feature": "F043",
+      "note": "?language=hi returns only doctors whose languages contain hi (case-insensitive, ?language=HI same); doctors speaking only en are absent. Combined ?specialty=Cardiology&language=hi is the intersection.",
+      "method": "GET",
+      "path": "/api/doctors?language=hi",
+      "auth": "patient P",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "items[*].languages": "each contains hi"
+      }
+    },
+    {
+      "id": "E-API-7a",
+      "story": "E2-S4",
+      "ac": 2,
+      "feature": "F044",
+      "note": "make doctor A's slots on a chosen future day D (within 14d) all BLOCKED or BOOKED (via PUT block and sqlite3), while doctor B keeps open slots on D. GET with available_from=D 00:00Z and available_to=D 23:59Z: A absent, B present. A wider range containing another open day returns A again.",
+      "method": "GET",
+      "path": "/api/doctors?available_from={D_start}&available_to={D_end}",
+      "auth": "patient P",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "items": "contains B, excludes A"
+      }
+    },
+    {
+      "id": "E-API-7b",
+      "story": "E2-S4",
+      "ac": 2,
+      "feature": "F044",
+      "note": "validation per API-09: available_to < available_from -> 422; naive (no tz) datetime -> 422 VALIDATION_ERROR.",
+      "method": "GET",
+      "path": "/api/doctors?available_from=2030-01-02T00:00:00Z&available_to=2030-01-01T00:00:00Z",
+      "auth": "patient P",
+      "expect_status": 422,
+      "expect_body_fields": {
+        "code": "VALIDATION_ERROR"
+      }
+    },
+    {
+      "id": "E-API-8",
+      "story": "E2-S4",
+      "ac": 3,
+      "feature": "F045",
+      "note": "three requests with sort=earliest_slot (also the default when omitted), sort=fee, sort=name. earliest_slot: nondecreasing, nulls last; fee: nondecreasing compared numerically as Decimal (300.00, 500.00, 750.00, not string order); name: alphabetical ascending (case-insensitive). Ties broken by name then doctor_id. sort=bogus -> 422.",
+      "method": "GET",
+      "path": "/api/doctors?sort={earliest_slot|fee|name}",
+      "auth": "patient P",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "items": "ordered ascending per sort key"
+      }
+    },
+    {
+      "id": "E-API-9a",
+      "story": "E2-S4",
+      "ac": 4,
+      "feature": "F046",
+      "note": "every item has fee matching ^\\d+\\.\\d{2}$ and is a JSON string (not number); earliest_slot is an ISO datetime equal to the min start_time of that doctor's AVAILABLE slots in (now, now+14d) (cross-check with sqlite3), or null when none. Items expose only DoctorSummary fields (no password_hash, email).",
+      "method": "GET",
+      "path": "/api/doctors",
+      "auth": "patient P",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "items[*].fee": "string like 500.00",
+        "items[*].earliest_slot": "ISO datetime or null"
+      }
+    },
+    {
+      "id": "E-API-9b",
+      "story": "E2-S4",
+      "ac": 4,
+      "feature": "F046",
+      "note": "deactivate doctor C (admin deactivate route or sqlite3 active=0). GET /api/doctors never lists C, with or without filters; GET /api/doctors/{C}/slots -> 404 and GET /api/doctors/{C} -> 404.",
+      "method": "GET",
+      "path": "/api/doctors",
+      "auth": "patient P",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "items": "excludes deactivated doctor C"
+      }
+    },
+    {
+      "id": "E-API-10a",
+      "story": "E2-S4",
+      "ac": 5,
+      "feature": "F047",
+      "note": "for doctor A arrange via sqlite3: one AVAILABLE slot now+2h, one BOOKED, one BLOCKED, one AVAILABLE slot 1h in the past, one AVAILABLE slot at now+15d. GET as patient P: only AVAILABLE slots with now < start_time < now+14d are returned, ordered ascending by start_time, every item status AVAILABLE; the BOOKED, BLOCKED, past and +15d slots are absent by slot_id.",
+      "method": "GET",
+      "path": "/api/doctors/{A}/slots",
+      "auth": "patient P",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "items": "only AVAILABLE future slots within 14d",
+        "items[*].status": "AVAILABLE",
+        "total": "equals len(items)"
+      }
+    },
+    {
+      "id": "E-API-10b",
+      "story": "E2-S4",
+      "ac": 5,
+      "feature": "F047",
+      "note": "unknown doctor id (999999) -> 404; a user id that belongs to a patient (not a doctor) -> 404 (API-11).",
+      "method": "GET",
+      "path": "/api/doctors/999999/slots",
+      "auth": "patient P",
+      "expect_status": 404
+    },
+    {
+      "id": "E-API-11a",
+      "story": "E2-S4",
+      "ac": 6,
+      "feature": "F048",
+      "note": "no Authorization header; also an invalid/garbage bearer token -> 401.",
+      "method": "GET",
+      "path": "/api/doctors",
+      "auth": "none",
+      "expect_status": 401
+    },
+    {
+      "id": "E-API-11b",
+      "story": "E2-S4",
+      "ac": 6,
+      "feature": "F048",
+      "note": "no Authorization header on GET /api/doctors/{A}/slots, GET /api/doctors/{A} and GET /api/doctors/me/slots -> 401 each; garbage bearer -> 401. Route-ordering (contract section 4): GET /api/doctors/me/slots with a patient token returns 403 (not 404/422 from /{doctor_id} parsing \"me\" as int).",
+      "method": "GET",
+      "path": "/api/doctors/{A}/slots",
+      "auth": "none",
+      "expect_status": 401
+    },
+    {
+      "id": "E-API-5c",
+      "story": "E2-S3",
+      "ac": 5,
+      "feature": "F042",
+      "note": "access-rule order (api-contracts 0.2.1: 404 before 409): set doctor B's slot BOOKED via sqlite3; doctor A PUTs block and unblock on it -> 404 (not 409); doctor B's slot and appointment unchanged. Also doctor A unblock on B's BLOCKED slot -> 404, slot still BLOCKED.",
+      "method": "PUT",
+      "path": "/api/doctors/me/slots/{B_booked_slot}/block",
+      "auth": "doctor A",
+      "expect_status": 404
+    },
+    {
+      "id": "E-API-10c",
+      "story": "E2-S4",
+      "ac": 5,
+      "feature": "F047",
+      "note": "permission matrix: doctor token and admin token each call GET /api/doctors, GET /api/doctors/{A}/slots -> 200 (any authenticated role).",
+      "method": "GET",
+      "path": "/api/doctors/{A}/slots",
+      "auth": "doctor A / admin",
+      "expect_status": 200
+    },
+    {
+      "id": "E-API-9c",
+      "story": "E2-S4",
+      "ac": 4,
+      "feature": "F046",
+      "note": "GET /api/doctors response shape: total equals len(items); items[*] contain exactly DoctorSummary fields and doctor_id, specialty, languages[] match the onboarding values for A and B.",
+      "method": "GET",
+      "path": "/api/doctors",
+      "auth": "patient P",
+      "expect_status": 200
+    }
+  ],
+  "playwright_checks": [],
+  "design_checks": [],
+  "architecture_checks": {
+    "files_must_exist": [
+      "backend/src/telemed/api/routers/doctors.py",
+      "backend/src/telemed/api/schemas/slots.py",
+      "backend/src/telemed/api/schemas/doctors.py",
+      "backend/src/telemed/service/doctor_service.py",
+      "backend/src/telemed/repository/slots_repo.py",
+      "backend/src/telemed/repository/doctors_repo.py"
+    ],
+    "files_must_not_exist": [],
+    "content_rules": [
+      "E2-S3 AC2/AC3/AC4: block and unblock are each a single conditional UPDATE in slots_repo.py (AVAILABLE->BLOCKED with doctor_id = caller; BLOCKED->AVAILABLE), checking rowcount; no read-then-write status check in doctor_service",
+      "E2-S3 AC5: foreign or absent slot id yields 404 (not 403/409); service/repository scope by doctor_id = caller; INVALID_SLOT_STATE (409) is raised for non-AVAILABLE block and non-BLOCKED unblock",
+      "E2-S3 AC5/auth: /api/doctors/me/* guarded by require_roles(DOCTOR) (403 for patient and admin); literal /me routes are registered BEFORE /{doctor_id} routes in routers/doctors.py",
+      "E2-S3 AC1: GET /me/slots accepts query aliases from and to, tz-aware datetimes, default from=now, to=from+14d, to>=from and range <=31 days else 422",
+      "E2-S4 AC1/AC2/AC3: filter and sort logic lives in doctors_repo.py (specialty and language case-insensitive, availability EXISTS over AVAILABLE slots in [from,to], sort in earliest_slot|fee|name with nulls last and ties by name then doctor_id); sort is an enum rejected with 422 when invalid; no filtering or sorting done in the router",
+      "E2-S4 AC4: fee serialised as a 2-decimal string through types/money.py (never float); DoctorSummary has earliest_slot (datetime or null); queries filter active users only so deactivated doctors never appear",
+      "E2-S4 AC5: open-slots query uses status = AVAILABLE AND start_time > now AND start_time < now + 14 days ordered by start_time",
+      "E2-S4 AC6: all /api/doctors endpoints depend on the authenticated-user dependency (401 without a valid token)"
+    ]
+  },
+  "review_notes": [
+    "Final contract reviewed by evaluator against stories E2-S3, E2-S4 and specs/design/api-contracts.md (API-09..API-14, 0.2.1 matrix, route ordering).",
+    "Removed: files_must_exist entries for integration test files, files_must_not_exist for routers/appointments.py, the Layering content rule, and the injected-clock clause of the AC5 rule. None traces to an acceptance criterion or the API contract.",
+    "Added: E-API-5c (404-before-409 ordering, AC5 + matrix), E-API-10c (doctor/admin may read doctors and slots), E-API-9c (DoctorSummary shape and values, AC4). Tightened E-API-5b, E-API-10b, E-API-11b.",
+    "Kept as contract-derived (API-12 to API-14): default range, to<from and >31d 422 in E-API-1b; INVALID_SLOT_STATE code on 409.",
+    "Booking endpoints (E3-S2) do not exist yet, so BOOKED states are arranged via sqlite3. Block-vs-booking concurrency is out of scope (E3-S2).",
+    "API-10 (GET /api/doctors/{id}) is supporting, spot-checked in E-API-9b and E-API-11b."
+  ]
+}

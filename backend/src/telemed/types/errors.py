@@ -17,6 +17,10 @@ class InvalidAppointmentStateException(DomainError):  # noqa: N818 - name fixed 
     code = "INVALID_APPOINTMENT_STATE"
 
 
+class InvalidSlotStateException(DomainError):  # noqa: N818 - mirrors the other codes
+    code = "INVALID_SLOT_STATE"
+
+
 class EmailAlreadyRegisteredException(DomainError):  # noqa: N818 - mirrors the other codes
     code = "EMAIL_ALREADY_REGISTERED"
 

@@ -1,37 +1,44 @@
-# Evaluator Report - Group D (E1-S5, E2-S2, E5-S1)
+# Evaluator Report - Group E (E2-S3, E2-S4; F038-F048)
 
-Verdict: PASS (all gating checks passed; no failures; no eval-failures JSON written)
+Verdict: PASS (all architecture checks and all 23 api_checks passed; no failures; no eval-failures JSON written)
 
-Contract: sprint-contracts/group-D.json (final, unmodified). Mode: local. Servers started via root `npm start` with DATABASE_PATH=./eval-d.db (start-backend.mjs defaults JWT_SECRET/APP_ENV=dev/PROVIDER_TIMEZONE=UTC). Health on :8000 and :5173 (proxy) returned 200 on first attempt. Admin inserted via sqlite3 with argon2 hash from backend security module. Evaluation instant was 2026-10-05T23:06Z (Monday, UTC); the first slot window still yielded Mondays 10-12 and 10-19, 12 slots as expected.
+Contract: sprint-contracts/group-E.json (final, unmodified). Mode: local. Backend started per start_command (DATABASE_PATH=./eval-e.db, JWT_SECRET 40 bytes, PROVIDER_TIMEZONE=UTC, APP_ENV=dev; alembic upgrade head, uvicorn --factory on 127.0.0.1:8000). Health returned 200 on the first attempt. Admin inserted via sqlite3 with an argon2 hash from telemed.service.security. Doctors A (Carl Cardio, Cardiology, [hi,en], 500.00), B (Abe Derm, Dermatology, [en], 750.00), C (Zed Cardio, Cardiology, [hi], 300.00) onboarded through POST /api/admin/doctors (201, slots_created > 0, 14 days of slots); patient P registered via the API. BOOKED/past/far/BLOCKED states arranged via sqlite3. 92 individual assertions executed (script in the scratchpad), 0 failed. Server stopped, backend/eval-e.db and eval-e-server.log deleted, port 8000 confirmed closed.
 
-## Architecture checks
-- All 21 files_must_exist present. files_must_not_exist (routers/doctors.py, routers/appointments.py) absent.
-- No UPDATE/DELETE on patient_profile_versions in backend/src; lint-imports: 2 contracts kept, 0 broken.
-- Router order: /me/profile routes before /{patient_id}/profile; admin router guarded by require_roles(ADMIN) at router level.
-- Only user_id/version_number logged in profile_service and doctor_service.
-- localStorage appears only in a comment in api/session.ts; fetch( only in api/client.ts; no hard-coded backend URL in frontend/src (only the Vite proxy target in vite.config.ts).
+## Architecture checks: PASS
+- All 6 files_must_exist present (routers/doctors.py, schemas/slots.py, schemas/doctors.py, doctor_service.py, slots_repo.py, doctors_repo.py).
+- Block/unblock: slots_repo.transition is a single conditional UPDATE (slot_id AND doctor_id AND status = expected), rowcount checked. The service does not read-then-write; it reads after the UPDATE only to classify a no-op (absent or foreign slot is 404, wrong state is 409 INVALID_SLOT_STATE).
+- /api/doctors/me/* guarded by require_roles(Role.DOCTOR); the literal /me routes are registered before /{doctor_id} in routers/doctors.py.
+- GET /me/slots uses aliases from/to with AwareDatetime, defaults from=now and to=from+14d, and a service-level check (to>=from, range<=31d) that returns 422.
+- Filter and sort logic lives in doctors_repo.search_active: lower() specialty, json_each language, EXISTS over AVAILABLE slots, sort earliest_slot (nulls last), fee (fee_minor) or name, ties by lower(name) then doctor_id. sort is the DoctorSort enum (422 when invalid). The router does no filtering or sorting.
+- Fee serialised through format_fee (str, quantize 0.01); the summary query filters User.active == 1 and role DOCTOR.
+- open_slots query: status = AVAILABLE AND start_time > now AND start_time < now + 14d, ordered by start_time.
+- All /api/doctors routes depend on get_current_user (401).
 
 ## API checks
-- D-API-0 PASS: :8000 and :5173 /api/config -> {UTC, 14, 60}; :5173/health ok.
-- D-API-1a PASS; 1b PASS (no token/malformed, GET+PUT -> 401 UNAUTHENTICATED, no version rows added).
-- D-API-2a PASS (version +1, earlier rows byte-identical incl. hex, carried forward, changed_by=p1). 2b PASS (both triggers abort with "patient_profile_versions is append-only", data unchanged).
-- D-API-3 PASS. D-API-4a PASS (doctor+admin 403 on /me GET/PUT, invalid body still 403, counts unchanged). 4b PASS (404 bodies byte-identical for other patient, missing id, doctor id; own 200, doctor 403, admin 200).
-- D-API-5a PASS (1 selected, passed). 5b PASS: profile_updated lines carry user_id; 0 occurrences of unique names, phones, "Orig Name", initial_password in server log.
-- D-API-6a PASS (single-field updates, ages 1/130, all 16 invalid bodies -> 422 with errors[].field (empty body -> field "body"), no version rows, extra role ignored). 6b PASS (4 passed).
-- D-API-6c N/A (optional): PUT /api/admin/patients/{id}/profile returns 404, not mounted; does not fail group D.
-- D-API-7a PASS (201, doctor_id==user_id, DOCTOR/active/argon2, fee_minor 50000, 1 template, 12 AVAILABLE Monday slots, 6 per Monday 09:00-11:30, none past, no password fields). 7b PASS (500.50, 0.00, languages [en,hi], default full_name, two templates same weekday -> 16 slots).
-- D-API-8a PASS (401/401/403/403, invalid body order preserved, counts unchanged). 9a PASS (all 7 cases, field paths correct, no rows, email reusable after). 10a PASS (5 fee cases, no echo). 11 PASS (409 for same, upper, mixed case, existing patient email; counts unchanged).
-- D-API-12a PASS (login role DOCTOR, user_id==doctor_id; wrong password 401 INVALID_CREDENTIALS). 12b PASS. 12c PASS (1 passed). 13a PASS (1 passed). 13b PASS (235 passed, 1 skipped).
+- E-API-0 PASS: health 200; onboard A, B, C 201 with slots_created > 0; all logins and the patient registration succeeded.
+- E-API-1a PASS: 200, non-empty, fields typed correctly, all doctor_id == A, ascending, total == len(items).
+- E-API-1b PASS: BLOCKED and BOOKED slots appear with their real status; a narrow window returns only the slot inside it; the default range matches the DB count for now..+14d; to<from 422 VALIDATION_ERROR; 32 days 422; exactly 31 days 200.
+- E-API-2a PASS: 200 with slot_id, doctor_id, status BLOCKED and times; sqlite and listing confirm BLOCKED.
+- E-API-2b PASS: second block 409 INVALID_SLOT_STATE with a message; row unchanged.
+- E-API-3 PASS: block on a BOOKED slot gives 409 INVALID_SLOT_STATE; slot, appointment row (byte-identical) and appointment_events count unchanged.
+- E-API-4a PASS: unblock 200 AVAILABLE, confirmed in sqlite. E-API-4b PASS: unblock on AVAILABLE and on BOOKED each 409 INVALID_SLOT_STATE, rows unchanged.
+- E-API-5a PASS: doctor A block and unblock on B's slot 404 (code and message strings present), B's slot still AVAILABLE; slot 999999 404 on both.
+- E-API-5b PASS: patient and admin get 403 on block, unblock and GET /me/slots; no token gives 401 on block and unblock; slot unchanged.
+- E-API-5c PASS: A block and unblock on B's BOOKED slot and on B's BLOCKED slot all 404, not 409; B's slots and appointment unchanged.
+- E-API-6a PASS: Cardiology gives {A, C} only, total == len, case-insensitive, unknown specialty gives {"items":[],"total":0}.
+- E-API-6b PASS: language=hi gives {A, C}, HI gives the same, en gives {A, B}, specialty=Cardiology&language=en gives {A}.
+- E-API-7a PASS: all of A's slots on day D blocked or booked, so the range D 00:00Z..23:59Z returns B and not A; a wider range containing open days returns A.
+- E-API-7b PASS: available_to < available_from gives 422 VALIDATION_ERROR; naive datetimes give 422 VALIDATION_ERROR.
+- E-API-8 PASS: sort=fee gives C(300.00), A(500.00), B(750.00); sort=name gives B(Abe), A(Carl), C(Zed); default and sort=earliest_slot are nondecreasing with nulls last; sort=bogus 422.
+- E-API-9a PASS: fee is a JSON string matching ^\d+\.\d{2}$; earliest_slot equals the sqlite MIN(start_time) of AVAILABLE slots in (now, now+14d) for every doctor; items expose exactly the six DoctorSummary fields.
+- E-API-9b PASS: no admin deactivate route is mounted (404 on POST and PUT), so I used the sqlite fallback (UPDATE users SET active=0 on C). C is absent from the unfiltered, specialty, language and sort listings. GET /api/doctors/{C}/slots 404, GET /api/doctors/{C} 404, GET /api/doctors/{A} 200.
+- E-API-9c PASS: total == len; A and B specialty, languages and fee match the onboarding values.
+- E-API-10a PASS: with A's AVAILABLE (now+2h), BOOKED, BLOCKED, past (-1h) and +15d slots arranged, only the AVAILABLE future one is returned; the other four are absent by slot_id; every item AVAILABLE, ascending, within the window, total == len; the list equals the sqlite query result.
+- E-API-10b PASS: doctor id 999999 gives 404; a patient's user id gives 404.
+- E-API-10c PASS: doctor and admin tokens get 200 on /api/doctors and /api/doctors/{A}/slots.
+- E-API-11a PASS: no token and a garbage token on /api/doctors give 401.
+- E-API-11b PASS: no token and a garbage token give 401 on /api/doctors/{A}/slots, /api/doctors/{A} and /api/doctors/me/slots; the patient token on /me/slots gives 403 (route ordering correct).
 
-## Playwright checks (Chromium, 1280x800 and 375x812)
-- D-PW-1 PASS (token only in sessionStorage key telemed.session; localStorage and cookies clean; survives reload; new context lands on /login).
-- D-PW-2 PASS (/doctors, /queue, /admin/users, each renders shell). 3a PASS. 3b PASS (4 wrong-role cases show Not allowed, URL unchanged). 3c PASS (unknown route; mocked 404 on /api/doctors/999 -> not-found page).
-- D-PW-4a PASS (mocked 401 clears session -> /login; login INVALID_CREDENTIALS stays on /login). 4b PASS (login 503 and protected 503 -> "try again", no technical detail, session kept).
-- D-PW-5a PASS (inline email-field duplicate message for same and different-case email, stays /register). 5b PASS (wrong password, unknown email, deactivated user -> identical message). 5c PASS (no horizontal scroll at 375 and 1280 on /login and /register, initial and error states; submit visible and enabled; screenshots saved in the scratchpad evald folder).
-- D-PW-6a PASS (login errors in role=alert/aria-live regions present in DOM beforehand; register 409 in #reg-email-error role=alert). 6b PASS (loading, empty, 500 and 503 error states visible via page.route on /api/doctors).
-- D-PW-7 PASS: vitest 4 files / 31 tests passed; tsc --noEmit exit 0.
-
-## Notes (non-failing)
-- Browser console "Failed to load resource" entries (401/404/409/500/503) occurred only for intentionally mocked or expected non-2xx responses (and placeholder routes /api/doctors etc. not yet implemented); no uncaught page errors.
-- Evaluator harness mistakes (admin timestamp format) were test setup, not application defects.
-- Cleanup: servers stopped, backend/eval-d.db and eval-d-server.log removed. Untracked, git-ignored backend/dev.db-shm/-wal (created 04:34, before this run's server) left untouched.
+## Notes
+- No application code modified. features.json not modified by this run (the caller did not ask for it).
+- Observation, not a failure: the deactivate route is not mounted, which the contract allows (sqlite fallback).

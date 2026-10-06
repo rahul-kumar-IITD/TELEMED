@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 
-from telemed.types.enums import AppointmentStatus, Gender, Role, SlotStatus
+from telemed.types.enums import AppointmentStatus, DoctorSort, Gender, Role, SlotStatus
 from telemed.types.ids import AppointmentId, SlotId, UserId
 
 
@@ -149,3 +149,26 @@ class OnboardedDoctor:
     fee: Decimal
     templates: tuple[StoredTemplate, ...]
     slots_created: int
+
+
+@dataclass(frozen=True)
+class DoctorSummary:
+    """A doctor as shown in search results; earliest_slot is the next open slot, if any."""
+
+    doctor_id: UserId
+    full_name: str
+    specialty: str
+    languages: tuple[str, ...]
+    fee: Decimal
+    earliest_slot: datetime | None
+
+
+@dataclass(frozen=True)
+class DoctorSearch:
+    """Search filters and sort; datetimes are tz-aware and already validated."""
+
+    specialty: str | None = None
+    language: str | None = None
+    available_from: datetime | None = None
+    available_to: datetime | None = None
+    sort: DoctorSort = DoctorSort.EARLIEST_SLOT

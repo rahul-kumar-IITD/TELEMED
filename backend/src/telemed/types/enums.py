@@ -15,6 +15,12 @@ class Gender(StrEnum):
     UNDISCLOSED = "UNDISCLOSED"
 
 
+class DoctorSort(StrEnum):
+    EARLIEST_SLOT = "earliest_slot"
+    FEE = "fee"
+    NAME = "name"
+
+
 class SlotStatus(StrEnum):
     AVAILABLE = "AVAILABLE"
     BOOKED = "BOOKED"

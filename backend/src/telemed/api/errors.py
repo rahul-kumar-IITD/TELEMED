@@ -14,6 +14,7 @@ from telemed.types.errors import (
     InputValidationException,
     InvalidAppointmentStateException,
     InvalidCredentialsException,
+    InvalidSlotStateException,
     NotFoundException,
     SlotUnavailableException,
 )
@@ -21,6 +22,7 @@ from telemed.types.errors import (
 _DOMAIN: dict[type[DomainError], tuple[int, str]] = {
     SlotUnavailableException: (409, "That slot is no longer available."),
     InvalidAppointmentStateException: (409, "That change is not allowed for this appointment."),
+    InvalidSlotStateException: (409, "That slot cannot change to the requested state."),
     EmailAlreadyRegisteredException: (409, "That email is already registered."),
     InvalidCredentialsException: (401, "Invalid email or password."),
     NotFoundException: (404, "Resource not found."),
