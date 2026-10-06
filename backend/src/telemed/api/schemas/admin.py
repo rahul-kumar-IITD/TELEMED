@@ -3,13 +3,13 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field, StringConstraints, field_validator
 
-from telemed.api.schemas.auth import Email, FullName
+from telemed.api.schemas.auth import Email, FullName, UserResponse
 from telemed.api.schemas.doctors import (
     AvailabilityTemplateIn,
     AvailabilityTemplateOut,
     is_language_code,
 )
-from telemed.types.domain import DoctorOnboarding, OnboardedDoctor
+from telemed.types.domain import DoctorOnboarding, OnboardedDoctor, UserView
 from telemed.types.money import format_fee
 
 Specialty = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
@@ -70,3 +70,13 @@ class OnboardDoctorResponse(BaseModel):
             ],
             slots_created=doctor.slots_created,
         )
+
+
+class UserListResponse(BaseModel):
+    items: list[UserResponse]
+    total: int
+
+    @classmethod
+    def from_domain(cls, views: list[UserView]) -> "UserListResponse":
+        items = [UserResponse.from_domain(view) for view in views]
+        return cls(items=items, total=len(items))

@@ -17,6 +17,20 @@ class InvalidAppointmentStateException(DomainError):  # noqa: N818 - name fixed 
     code = "INVALID_APPOINTMENT_STATE"
 
 
+class ChangeWindowClosedException(DomainError):  # noqa: N818 - mirrors the other codes
+    """A patient cancel/reschedule less than 60 minutes before start, or after it."""
+
+    code = "CHANGE_WINDOW_CLOSED"
+
+
+class CannotDeactivateSelfException(DomainError):  # noqa: N818 - mirrors the other codes
+    code = "CANNOT_DEACTIVATE_SELF"
+
+
+class ActiveAppointmentsExistException(DomainError):  # noqa: N818 - mirrors the other codes
+    code = "ACTIVE_APPOINTMENTS_EXIST"
+
+
 class InvalidSlotStateException(DomainError):  # noqa: N818 - mirrors the other codes
     code = "INVALID_SLOT_STATE"
 

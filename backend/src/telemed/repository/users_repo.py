@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -68,3 +68,19 @@ def insert_user(
             raise
         raise EmailAlreadyRegisteredException() from exc
     return user_to_domain(row)
+
+
+def list_users(session: Session, role: Role | None, active: bool | None) -> list[domain.User]:
+    """All users ordered by user_id, optionally filtered by role and active flag."""
+    stmt = select(UserRow).order_by(UserRow.user_id)
+    if role is not None:
+        stmt = stmt.where(UserRow.role == role.value)
+    if active is not None:
+        stmt = stmt.where(UserRow.active == int(active))
+    return [user_to_domain(row) for row in session.scalars(stmt)]
+
+
+def set_active(session: Session, user_id: UserId, active: bool, now: datetime) -> None:
+    session.execute(
+        update(UserRow).where(UserRow.user_id == user_id).values(active=int(active), updated_at=now)
+    )

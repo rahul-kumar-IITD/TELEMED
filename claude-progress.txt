@@ -106,3 +106,19 @@ learned_rules: 0
 blocked_stories: none
 notes: E3-S2 booking implemented (atomic claim, payment stub post-commit). Race test lives in tests/integration/test_booking.py.
 next_action: Run /auto --mode lean --group G (propose sprint contract for group G)
+
+=== Session 7 ===
+date: 2026-10-06
+mode: lean
+groups_completed: [A, B, C, D, E, F, G]
+groups_remaining: [H, I, J, K]
+current_group: H (not started)
+current_stories: []
+sprint_contract: sprint-contracts/group-G.json (group G complete, evaluator PASS)
+last_commit: see git log "feat: implement group G"
+features_passing: 87 / 136
+coverage: 100%
+learned_rules: 0
+blocked_stories: none
+notes: E3-S3 cancel, E4-S2 admin user mgmt, E6-S1 seed, E5-S2 patient search/booking UI. Evaluator caveats: no doctor check-in endpoint yet (G-API-8 sub-step), seeded admin verified by hash not live login.
+next_action: Run /auto --mode lean --group H (propose sprint contract for group H)

@@ -1,11 +1,14 @@
 import type { ReactNode } from "react";
-import { Navigate, Outlet, Route, Routes, useParams } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { homeForRole, PATHS } from "../config/routes";
 import { useAuth } from "../hooks/useAuth";
 import type { Role } from "../types/contracts";
 import { AppLayout } from "./layouts/AppLayout";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { RegisterPage } from "./pages/auth/RegisterPage";
+import { BookingConfirmationPage } from "./pages/patient/BookingConfirmationPage";
+import { DoctorDetailPage } from "./pages/patient/DoctorDetailPage";
+import { DoctorSearchPage } from "./pages/patient/DoctorSearchPage";
 import { ResourceShell } from "./pages/shell/ResourceShell";
 import { NotAllowedPage } from "./pages/system/NotAllowedPage";
 import { NotFoundPage } from "./pages/system/NotFoundPage";
@@ -29,18 +32,6 @@ function RootRedirect() {
   return <Navigate to={session ? homeForRole(session.role) : PATHS.login} replace />;
 }
 
-function DoctorDetail() {
-  const { doctor_id } = useParams();
-  return (
-    <ResourceShell
-      title="Doctor"
-      path={`/api/doctors/${encodeURIComponent(doctor_id ?? "")}`}
-      emptyMessage="No details available."
-      object
-    />
-  );
-}
-
 export function AppRoutes() {
   return (
     <Routes>
@@ -50,11 +41,9 @@ export function AppRoutes() {
         <Route path="register" element={<PublicOnly><RegisterPage /></PublicOnly>} />
 
         <Route element={<RequireRole />}>
-          <Route
-            path="doctors"
-            element={<ResourceShell title="Find a doctor" path="/api/doctors" emptyMessage="No doctors found." />}
-          />
-          <Route path="doctors/:doctor_id" element={<DoctorDetail />} />
+          <Route path="doctors" element={<DoctorSearchPage />} />
+          <Route path="doctors/:doctor_id" element={<DoctorDetailPage />} />
+          <Route path="doctors/:doctor_id/book/:slot_id" element={<BookingConfirmationPage />} />
         </Route>
         <Route element={<RequireRole roles={["DOCTOR"]} />}>
           <Route

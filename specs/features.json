@@ -1208,8 +1208,8 @@
       "Assert one CANCELLED event",
       "Assert refund spy call count is 1"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1228,8 +1228,8 @@
       "Advance the clock past start and cancel again, assert 409",
       "Assert appointment still BOOKED, no new events, refund spy count 0"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1248,8 +1248,8 @@
       "Assert 404",
       "Assert A's appointment is still BOOKED"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1270,8 +1270,8 @@
       "Assert the event actor_role is DOCTOR",
       "Assert refund spy count is 1"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1290,8 +1290,8 @@
       "Assert 409",
       "Assert event count unchanged"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1686,8 +1686,8 @@
       "GET /api/admin/users and assert 5 rows with role and active fields",
       "GET ?role=DOCTOR and assert 2 rows"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1707,8 +1707,8 @@
       "Patient login and old token both return 401",
       "Doctor checks the appointment in and assert 200"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1727,8 +1727,8 @@
       "Complete the appointment and deactivate again, assert 200",
       "GET /api/doctors and assert the doctor is absent"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1747,8 +1747,8 @@
       "Assert 409",
       "Read the user and assert active is true"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1767,8 +1767,8 @@
       "Doctor login returns 200",
       "GET /api/doctors and assert the doctor is present"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1788,8 +1788,8 @@
       "Assert version count increased by 1",
       "Assert earlier rows unchanged"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2000,8 +2000,8 @@
       "Assert each result card shows its fee",
       "Apply filters matching nothing and assert the empty state"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2021,8 +2021,8 @@
       "Assert slots are grouped by date",
       "Assert a slot label matches '\\d{2}:\\d{2} IST'"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2042,8 +2042,8 @@
       "Assert navigation to the confirmation view",
       "Assert doctor name, local time and fee are shown"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2064,8 +2064,8 @@
       "Assert the inline message",
       "Assert the slot is no longer listed"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2085,8 +2085,8 @@
       "On search and detail pages assert scrollWidth <= clientWidth",
       "Measure all buttons and links and assert each bounding box >= 44px in both dimensions"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2459,8 +2459,8 @@
       "Count users per role",
       "Assert 1 admin, >=3 doctors with >=3 distinct specialties and >=5 patients"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": []
@@ -2475,8 +2475,8 @@
       "Run the seed script twice",
       "Assert user and slot counts after the second run equal the counts after the first"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": []
@@ -2491,8 +2491,8 @@
       "Query all seeded emails and assert the suffix '@example.test'",
       "Assert no slot starts after now+14 days or before now"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T06:10:18Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": []

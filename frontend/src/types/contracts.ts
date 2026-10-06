@@ -62,3 +62,47 @@ export interface Session {
   role: Role;
   expires_at: string;
 }
+
+export type DoctorSort = "earliest_slot" | "fee" | "name";
+
+export interface DoctorSummary {
+  doctor_id: number;
+  full_name: string;
+  specialty: string;
+  languages: string[];
+  fee: string; // decimal string, rendered as-is
+  earliest_slot: string | null;
+}
+
+export interface Slot {
+  slot_id: number;
+  doctor_id: number;
+  start_time: string;
+  end_time: string;
+  status: string;
+}
+
+export interface Appointment {
+  appointment_id: number;
+  status: string;
+  slot_id: number;
+  start_time: string;
+  end_time: string;
+  doctor: { doctor_id: number; full_name: string; specialty: string };
+  patient: { patient_id: number; full_name: string };
+  fee: string;
+  allowed_actions: string[];
+  join_url: string | null;
+  change_deadline: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Search filters as entered; dates are local YYYY-MM-DD strings or "". */
+export interface DoctorFilters {
+  specialty: string;
+  language: string;
+  availableFrom: string;
+  availableTo: string;
+  sort: DoctorSort;
+}

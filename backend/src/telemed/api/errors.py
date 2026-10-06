@@ -8,6 +8,9 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from telemed.service import bootstrap
 from telemed.types.errors import (
+    ActiveAppointmentsExistException,
+    CannotDeactivateSelfException,
+    ChangeWindowClosedException,
     DomainError,
     EmailAlreadyRegisteredException,
     ForbiddenException,
@@ -22,6 +25,11 @@ from telemed.types.errors import (
 _DOMAIN: dict[type[DomainError], tuple[int, str]] = {
     SlotUnavailableException: (409, "That slot is no longer available."),
     InvalidAppointmentStateException: (409, "That change is not allowed for this appointment."),
+    ChangeWindowClosedException: (
+        409, "Changes are no longer allowed less than 60 minutes before the appointment."
+    ),
+    CannotDeactivateSelfException: (409, "You cannot deactivate your own account."),
+    ActiveAppointmentsExistException: (409, "That doctor still has active appointments."),
     InvalidSlotStateException: (409, "That slot cannot change to the requested state."),
     EmailAlreadyRegisteredException: (409, "That email is already registered."),
     InvalidCredentialsException: (401, "Invalid email or password."),

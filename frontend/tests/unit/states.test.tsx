@@ -49,16 +49,16 @@ describe("shell page states", () => {
     renderApp("/doctors");
     expect(await screen.findByTestId("loading-state")).toBeInTheDocument();
     release(json(200, { items: [], total: 0 }));
-    expect(await screen.findByTestId("empty-state")).toHaveTextContent("No doctors found.");
+    expect(await screen.findByTestId("empty-state")).toHaveTextContent("No doctors match your filters.");
   });
 
   it("shows an error on 500 and recovers on retry", async () => {
-    loginAs("PATIENT");
+    loginAs("DOCTOR");
     let ok = false;
     mockFetch(() =>
       ok ? json(200, { items: [{ a: 1 }], total: 1 }) : json(500, { code: "INTERNAL_ERROR", message: "x" }),
     );
-    renderApp("/doctors");
+    renderApp("/queue");
     expect(await screen.findByTestId("error-state")).toHaveTextContent("Something went wrong");
     ok = true;
     await userEvent.click(screen.getByRole("button", { name: "Retry" }));
@@ -66,13 +66,13 @@ describe("shell page states", () => {
   });
 
   it("treats non-list objects as non-empty and non-JSON errors as generic", async () => {
-    loginAs("PATIENT");
+    loginAs("DOCTOR");
     mockFetch(() => json(200, { doctor_id: 1 }));
-    const first = renderApp("/doctors/1");
+    const first = renderApp("/queue");
     expect(await screen.findByText("This section is coming soon.")).toBeInTheDocument();
     first.unmount();
     mockFetch(() => new Response("<html>", { status: 502 }));
-    renderApp("/doctors/1");
+    renderApp("/queue");
     expect(await screen.findByTestId("error-state")).toHaveTextContent("Something went wrong");
   });
 });

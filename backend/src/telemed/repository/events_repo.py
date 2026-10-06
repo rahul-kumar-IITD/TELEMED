@@ -19,3 +19,18 @@ def insert_booked(
         )
     )
     session.flush()
+
+
+def insert_cancelled(
+    session: Session, appointment_id: AppointmentId, actor_id: UserId, actor_role: Role,
+    now: datetime,
+) -> None:
+    session.add(
+        AppointmentEvent(
+            appointment_id=appointment_id, event_type=EventType.CANCELLED.value,
+            from_status=AppointmentStatus.BOOKED.value,
+            to_status=AppointmentStatus.CANCELLED.value, actor_user_id=actor_id,
+            actor_role=actor_role.value, created_at=now,
+        )
+    )
+    session.flush()

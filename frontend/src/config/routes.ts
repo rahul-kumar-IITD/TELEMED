@@ -8,6 +8,10 @@ export const PATHS = {
   adminUsers: "/admin/users",
 } as const;
 
+export const doctorRoute = (doctorId: number | string) => `/doctors/${doctorId}`;
+export const bookRoute = (doctorId: number | string, slotId: number | string) =>
+  `/doctors/${doctorId}/book/${slotId}`;
+
 export function homeForRole(role: Role): string {
   switch (role) {
     case "PATIENT":
@@ -24,5 +28,6 @@ export const MESSAGES = {
   generic: "Something went wrong. Please try again.",
   invalidCredentials: "Invalid email or password.",
   duplicateEmail: "An account with this email already exists.",
+  slotTaken: "That slot is no longer available. The slot list has been refreshed.",
   sessionExpired: "Your session expired. Please log in again.",
 } as const;

@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException, Request
 
 from telemed.service.auth_service import AuthService
 from telemed.service.booking_service import BookingService
+from telemed.service.cancellation_service import CancellationService
 from telemed.service.container import Container
 from telemed.service.doctor_service import DoctorService
 from telemed.service.integrations.interfaces import (
@@ -14,6 +15,7 @@ from telemed.service.integrations.interfaces import (
     VideoService,
 )
 from telemed.service.profile_service import ProfileService
+from telemed.service.user_admin_service import UserAdminService
 from telemed.types import domain
 from telemed.types.enums import Role
 from telemed.types.errors import InvalidTokenError
@@ -38,6 +40,18 @@ def get_doctor_service(container: Container = Depends(get_container)) -> DoctorS
 
 def get_booking_service(container: Container = Depends(get_container)) -> BookingService:
     return container.booking
+
+
+def get_cancellation_service(
+    container: Container = Depends(get_container),
+) -> CancellationService:
+    return container.cancellation
+
+
+def get_user_admin_service(
+    container: Container = Depends(get_container),
+) -> UserAdminService:
+    return container.user_admin
 
 
 def get_video_service(container: Container = Depends(get_container)) -> VideoService:

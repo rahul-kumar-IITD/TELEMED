@@ -6,6 +6,7 @@ from telemed.repository.database import create_db_engine
 from telemed.service.auth_service import AuthService
 from telemed.service.booking_service import BookingService
 from telemed.service.bootstrap import Runtime
+from telemed.service.cancellation_service import CancellationService
 from telemed.service.doctor_service import DoctorService
 from telemed.service.integrations.interfaces import (
     NotificationService,
@@ -22,6 +23,7 @@ from telemed.service.integrations.stubs import (
 from telemed.service.profile_service import ProfileService
 from telemed.service.slot_generator import SlotGenerator
 from telemed.service.unit_of_work import UnitOfWork
+from telemed.service.user_admin_service import UserAdminService
 
 __all__ = ["Clock", "Container", "build_container"]
 
@@ -35,6 +37,8 @@ class Container:
     profiles: ProfileService
     doctors: DoctorService
     booking: BookingService
+    cancellation: CancellationService
+    user_admin: UserAdminService
     slot_generator: SlotGenerator
     video: VideoService
     payment: PaymentService
@@ -55,6 +59,8 @@ def build_container(runtime: Runtime, clock: Clock | None = None) -> Container:
         profiles=ProfileService(uow, the_clock),
         doctors=DoctorService(uow, the_clock, slot_generator),
         booking=BookingService(uow, the_clock),
+        cancellation=CancellationService(uow, the_clock),
+        user_admin=UserAdminService(uow, the_clock),
         slot_generator=slot_generator,
         video=StubVideoService(runtime.video_base_url),
         payment=StubPaymentService(),

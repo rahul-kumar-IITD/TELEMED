@@ -31,7 +31,7 @@ describe("route guards", () => {
     ["ADMIN", "Users"],
   ] as const)("lands %s on its home shell from /", async (role, title) => {
     loginAs(role);
-    mockFetch(() => json(200, { items: [{}], total: 1 }));
+    mockFetch(() => json(200, { items: [], total: 0 }));
     renderApp("/");
     expect(await screen.findByRole("heading", { name: title })).toBeInTheDocument();
   });
