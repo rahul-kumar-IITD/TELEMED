@@ -90,3 +90,19 @@ learned_rules: 0
 blocked_stories: none
 notes: E2-S3 and E2-S4 implemented (doctors router, slots schemas). No admin deactivate route mounted yet (E4-S2).
 next_action: Run /auto --mode lean --group F (propose sprint contract for group F)
+
+=== Session 6 ===
+date: 2026-10-06
+mode: lean
+groups_completed: [A, B, C, D, E, F]
+groups_remaining: [G, H, I, J, K]
+current_group: G (not started)
+current_stories: [E3-S3, E4-S2, E5-S2, E6-S1]
+sprint_contract: sprint-contracts/group-F.json (group F complete, evaluator PASS)
+last_commit: see git log "feat: implement group F"
+features_passing: see features.json
+coverage: 100%
+learned_rules: 0
+blocked_stories: none
+notes: E3-S2 booking implemented (atomic claim, payment stub post-commit). Race test lives in tests/integration/test_booking.py.
+next_action: Run /auto --mode lean --group G (propose sprint contract for group G)

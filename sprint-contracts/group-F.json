@@ -1,0 +1,324 @@
+{
+  "group": "F",
+  "stories": [
+    "E3-S2"
+  ],
+  "features": [
+    "F054",
+    "F055",
+    "F056",
+    "F057",
+    "F058",
+    "F059"
+  ],
+  "mode": "lean",
+  "verification_mode": "local",
+  "contract_status": "final (evaluator-reviewed)",
+  "start_command": "cd backend && export DATABASE_PATH=./eval-f.db JWT_SECRET=eval-secret-at-least-32-bytes-long-0123456789 PROVIDER_TIMEZONE=UTC APP_ENV=dev && rm -f eval-f.db && uv run alembic upgrade head && uv run uvicorn telemed.api.app:create_app --factory --host 127.0.0.1 --port 8000 > ../eval-f-server.log 2>&1",
+  "start_note": "Backend :8000 only (API-only group, no frontend). DATABASE_PATH is relative to backend/, so sqlite3 inspection targets backend/eval-f.db. JWT_SECRET must be exported (min 32 bytes). Insert an admin via sqlite3 (argon2 hash via uv run python, same technique as groups C/D/E) and log in via POST /api/auth/login. Create doctors via POST /api/admin/doctors (generates 14 days of slots): doctor A fee 500.00, doctor B fee 300.00. Register >= 21 patients via POST /api/auth/register and log in each (20 for the race, 1 spare). Slot states for F056/F057 (BOOKED, BLOCKED, past, now+15d) are arranged by sqlite3 UPDATE on slots.status/start_time, or BLOCKED via PUT /api/doctors/me/slots/{id}/block. Doctor deactivation via the admin deactivate route if mounted, else sqlite3 UPDATE users SET active=0. The 20-way race is fired from a script (e.g. python httpx/asyncio.gather or xargs -P20 curl) with barrier-style simultaneous start; DB state is verified with sqlite3 afterwards. The payment stub is in-process and not observable over HTTP: F059 call-count is verified by running the repo's pytest integration test (backend/tests/integration/test_booking.py) which overrides PaymentService with a spy; the HTTP-visible part (fee string) is checked live.",
+  "backend_url": "http://localhost:8000",
+  "api_checks": [
+    {
+      "id": "F-API-0",
+      "story": "E3-S2",
+      "ac": "prerequisite",
+      "feature": "F054",
+      "note": "setup/regression: GET /health -> 200; admin login; onboard doctors A (fee 500.00) and B (fee 300.00) (201, slots_created > 0); register and log in 21 patients. Failure blocks the group.",
+      "method": "GET",
+      "path": "/health",
+      "expect_status": 200
+    },
+    {
+      "id": "F-API-1a",
+      "story": "E3-S2",
+      "ac": 1,
+      "feature": "F054",
+      "note": "as patient P1, pick an AVAILABLE slot S1 of doctor A within (now, now+14d) (GET /api/doctors/{A}/slots). Snapshot appointments count and appointment_events count via sqlite3, then POST {\"slot_id\": S1}.",
+      "method": "POST",
+      "path": "/api/appointments",
+      "auth": "patient P1",
+      "body": {
+        "slot_id": "S1"
+      },
+      "expect_status": 201,
+      "expect_body_fields": {
+        "appointment_id": "non-null int",
+        "status": "BOOKED",
+        "slot_id": "S1",
+        "start_time": "ISO datetime equal to the slot's start_time",
+        "end_time": "ISO datetime",
+        "doctor": "{doctor_id: A, full_name, specialty}",
+        "patient": "{patient_id: P1, full_name}",
+        "fee": "string",
+        "allowed_actions": "array (patient view of BOOKED)",
+        "join_url": "non-empty string"
+      }
+    },
+    {
+      "id": "F-API-1b",
+      "story": "E3-S2",
+      "ac": 1,
+      "feature": "F054",
+      "note": "database effects via sqlite3 after F-API-1a: slots.status for S1 is BOOKED; exactly one new appointments row with slot_id=S1, patient=P1, status BOOKED; exactly one appointment_events row for that appointment with type BOOKED (and no other event rows). Slot is no longer returned by GET /api/doctors/{A}/slots.",
+      "method": "GET",
+      "path": "/api/doctors/{A}/slots",
+      "auth": "patient P1",
+      "expect_status": 200,
+      "expect_body_fields": {
+        "items": "does not contain S1"
+      }
+    },
+    {
+      "id": "F-API-1c",
+      "story": "E3-S2",
+      "ac": "1 (API-21 error table)",
+      "feature": "F054",
+      "note": "re-booking the same slot S1 by another patient P2 -> 409 SLOT_UNAVAILABLE; appointment and event counts unchanged.",
+      "method": "POST",
+      "path": "/api/appointments",
+      "auth": "patient P2",
+      "body": {
+        "slot_id": "S1"
+      },
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "SLOT_UNAVAILABLE",
+        "message": "string"
+      }
+    },
+    {
+      "id": "F-API-1d",
+      "story": "E3-S2",
+      "ac": "API-21 error table (supports AC1)",
+      "feature": "F054",
+      "note": "nonexistent slot_id 999999 as patient -> 404 NOT_FOUND; no rows created.",
+      "method": "POST",
+      "path": "/api/appointments",
+      "auth": "patient P2",
+      "body": {
+        "slot_id": 999999
+      },
+      "expect_status": 404,
+      "expect_body_fields": {
+        "code": "NOT_FOUND"
+      }
+    },
+    {
+      "id": "F-API-1e",
+      "story": "E3-S2",
+      "ac": "API-21 error table (supports AC1)",
+      "feature": "F054",
+      "note": "body missing slot_id, and slot_id \"abc\" -> 422 VALIDATION_ERROR with errors[].field slot_id; no rows created.",
+      "method": "POST",
+      "path": "/api/appointments",
+      "auth": "patient P2",
+      "body": {
+        "slot_id": "abc"
+      },
+      "expect_status": 422,
+      "expect_body_fields": {
+        "code": "VALIDATION_ERROR"
+      }
+    },
+    {
+      "id": "F-API-2",
+      "story": "E3-S2",
+      "ac": 2,
+      "feature": "F055",
+      "note": "pick a fresh AVAILABLE slot S2 of doctor A. Fire 20 simultaneous POST /api/appointments {slot_id:S2}, each with a distinct patient token (P1..P20), released together. Tally status codes: exactly one 201, exactly nineteen 409 (code SLOT_UNAVAILABLE), zero 503, zero 5xx, zero connection errors. Verify via sqlite3: exactly one appointments row for S2, exactly one BOOKED event for it, slot S2 BOOKED. Repeat the burst once on another slot S3 to rule out luck.",
+      "method": "POST",
+      "path": "/api/appointments",
+      "auth": "20 distinct patients, concurrent",
+      "body": {
+        "slot_id": "S2"
+      },
+      "expect_status": "exactly 1x 201 and 19x 409; 0x 503",
+      "expect_body_fields": {
+        "409 body code": "SLOT_UNAVAILABLE"
+      }
+    },
+    {
+      "id": "F-API-3a",
+      "story": "E3-S2",
+      "ac": 3,
+      "feature": "F056",
+      "note": "BOOKED slot: book the already-booked S1 as P3 -> 409. Snapshot appointments count before/after: unchanged.",
+      "method": "POST",
+      "path": "/api/appointments",
+      "auth": "patient P3",
+      "body": {
+        "slot_id": "S1 (BOOKED)"
+      },
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "SLOT_UNAVAILABLE"
+      }
+    },
+    {
+      "id": "F-API-3b",
+      "story": "E3-S2",
+      "ac": 3,
+      "feature": "F056",
+      "note": "BLOCKED slot: doctor A PUT block on slot S4, then P3 books S4 -> 409; slot still BLOCKED; no appointment row.",
+      "method": "POST",
+      "path": "/api/appointments",
+      "auth": "patient P3",
+      "body": {
+        "slot_id": "S4 (BLOCKED)"
+      },
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "SLOT_UNAVAILABLE"
+      }
+    },
+    {
+      "id": "F-API-3c",
+      "story": "E3-S2",
+      "ac": 3,
+      "feature": "F056",
+      "note": "past slot: sqlite3 set an AVAILABLE slot S5's start_time/end_time to 1h in the past (format matching existing rows); book -> 409; slot stays AVAILABLE; no appointment.",
+      "method": "POST",
+      "path": "/api/appointments",
+      "auth": "patient P3",
+      "body": {
+        "slot_id": "S5 (past)"
+      },
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "SLOT_UNAVAILABLE"
+      }
+    },
+    {
+      "id": "F-API-3d",
+      "story": "E3-S2",
+      "ac": 3,
+      "feature": "F056",
+      "note": "beyond-window slot: sqlite3 set an AVAILABLE slot S6 start_time to now+15d; book -> 409; slot stays AVAILABLE; no appointment. Boundary sanity: a slot at now+13d23h books successfully (201).",
+      "method": "POST",
+      "path": "/api/appointments",
+      "auth": "patient P3",
+      "body": {
+        "slot_id": "S6 (now+15d)"
+      },
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "SLOT_UNAVAILABLE"
+      }
+    },
+    {
+      "id": "F-API-4",
+      "story": "E3-S2",
+      "ac": 4,
+      "feature": "F057",
+      "note": "deactivate doctor B (no live appointments), take one of B's AVAILABLE future slot ids S7 (read before deactivation), POST as patient P3 -> 409 SLOT_UNAVAILABLE (not 404, not 201). Verify via sqlite3 that S7 is still AVAILABLE and no appointment was created.",
+      "method": "POST",
+      "path": "/api/appointments",
+      "auth": "patient P3",
+      "body": {
+        "slot_id": "S7 (deactivated doctor)"
+      },
+      "expect_status": 409,
+      "expect_body_fields": {
+        "code": "SLOT_UNAVAILABLE"
+      }
+    },
+    {
+      "id": "F-API-5a",
+      "story": "E3-S2",
+      "ac": 5,
+      "feature": "F058",
+      "note": "doctor A token POSTs with a valid AVAILABLE slot id -> 403; admin token -> 403 (admin never books for a patient). Slot stays AVAILABLE; no rows created.",
+      "method": "POST",
+      "path": "/api/appointments",
+      "auth": "doctor A / admin",
+      "body": {
+        "slot_id": "valid AVAILABLE slot"
+      },
+      "expect_status": 403
+    },
+    {
+      "id": "F-API-5b",
+      "story": "E3-S2",
+      "ac": 5,
+      "feature": "F058",
+      "note": "no Authorization header -> 401; garbage bearer token -> 401. Slot unchanged.",
+      "method": "POST",
+      "path": "/api/appointments",
+      "auth": "none",
+      "body": {
+        "slot_id": "valid AVAILABLE slot"
+      },
+      "expect_status": 401
+    },
+    {
+      "id": "F-API-5c",
+      "story": "E3-S2",
+      "ac": 5,
+      "feature": "F058",
+      "note": "access-rule order (api-contracts 0.2): doctor token with nonexistent slot_id or invalid body -> 403 (not 404/422); no token with invalid body -> 401.",
+      "method": "POST",
+      "path": "/api/appointments",
+      "auth": "doctor A / none",
+      "body": {
+        "slot_id": 999999
+      },
+      "expect_status": "403 (doctor); 401 (none)"
+    },
+    {
+      "id": "F-API-6a",
+      "story": "E3-S2",
+      "ac": 6,
+      "feature": "F059",
+      "note": "live check: book an AVAILABLE slot of doctor A (fee 500.00) as a patient; response fee is the JSON string \"500.00\" (matches ^\\d+\\.\\d{2}$, not a number) and equals the doctor's profile fee; appointments row stores the fee snapshot.",
+      "method": "POST",
+      "path": "/api/appointments",
+      "auth": "patient P4",
+      "expect_status": 201,
+      "expect_body_fields": {
+        "fee": "\"500.00\" (string)"
+      }
+    },
+    {
+      "id": "F-API-6b",
+      "story": "E3-S2",
+      "ac": 6,
+      "feature": "F059",
+      "note": "payment stub call count: run the repo test that overrides PaymentService with a spy (cd backend && uv run pytest tests/integration/test_booking.py -k payment) and confirm it asserts charge called exactly once on success and zero times on a 409. Also confirm failed bookings (F-API-3a) do not invoke the stub (spy count 0).",
+      "method": "n/a (pytest)",
+      "path": "backend/tests/integration/test_booking.py",
+      "auth": "n/a",
+      "expect_status": "pytest pass; spy.charge.call_count == 1 on success, 0 on conflict"
+    }
+  ],
+  "playwright_checks": [],
+  "design_checks": [],
+  "architecture_checks": {
+    "files_must_exist": [
+      "backend/src/telemed/service/booking_service.py",
+      "backend/src/telemed/repository/appointments_repo.py",
+      "backend/src/telemed/repository/events_repo.py",
+      "backend/src/telemed/api/schemas/appointments.py",
+      "backend/src/telemed/api/routers/appointments.py",
+      "backend/src/telemed/service/allowed_actions.py"
+    ],
+    "files_must_not_exist": [],
+    "content_rules": [
+      "E3-S2 AC1/AC2: slot claim is a single conditional UPDATE (slots SET status='BOOKED' WHERE slot_id=? AND status='AVAILABLE' AND start_time window AND doctor active) in slots_repo.py, checking rowcount == 1; no read-then-write availability check in booking_service",
+      "E3-S2 AC1/AC2: slot UPDATE, appointment INSERT and BOOKED event INSERT occur inside one transaction (BEGIN IMMEDIATE per API-21); failure of any step rolls back all three",
+      "E3-S2 AC2: rowcount 0 raises SlotUnavailableException mapped to 409 code SLOT_UNAVAILABLE; SQLite lock contention does not surface as 503 (busy timeout / immediate transaction handled)",
+      "E3-S2 AC3: window predicate in SQL is now < start_time < now + 14 days, so BOOKED, BLOCKED, past and beyond-window slots all fail the single UPDATE",
+      "E3-S2 AC4: doctor-active check is part of the conditional UPDATE (or joined in it), not only a prior lookup",
+      "E3-S2 AC5: POST /api/appointments guarded by require_roles(PATIENT); doctor and admin 403, no token 401",
+      "E3-S2 AC6: PaymentService obtained via the overridable dependency in api/deps.py, charge called once after the booking transaction commits; fee serialised as a 2-decimal string through types/money.py (never float)",
+      "Layering: router -> booking_service -> repositories; no SQL in the router; appointment fee is a snapshot taken from the doctor profile at booking time"
+    ]
+  },
+  "review_notes": [
+    "Proposed by generator, pending evaluator review. Derived from specs/stories/E3-S2.md, api-contracts.md API-21 and features F054-F059.",
+    "F055 requires a genuinely simultaneous burst; the evaluator should use a script with a start barrier, not a sequential curl loop.",
+    "F059 spy assertion cannot be observed over HTTP; verified via the repo pytest integration test plus the live fee-string check.",
+    "api-contracts API-21 lists 404 for nonexistent slot_id and 422 for bad body; included as supporting checks in F-API-1c.",
+    "Out of scope: cancel/reschedule (E3-S3/S4), my-appointments listing (E4-S3), full allowed_actions matrix (E3-S5).",
+    "Evaluator review: split F-API-1c into 1c/1d/1e (409/404/422 separately traceable to API-21); added F-API-5c (401/403 precede 404/422). All other checks trace to AC1-6 and were kept. F-API-3d boundary sanity (13d23h -> 201) retained as AC3 boundary check."
+  ]
+}

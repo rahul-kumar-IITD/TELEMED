@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from telemed.config.clock import Clock, SystemClock
 from telemed.repository.database import create_db_engine
 from telemed.service.auth_service import AuthService
+from telemed.service.booking_service import BookingService
 from telemed.service.bootstrap import Runtime
 from telemed.service.doctor_service import DoctorService
 from telemed.service.integrations.interfaces import (
@@ -33,6 +34,7 @@ class Container:
     auth: AuthService
     profiles: ProfileService
     doctors: DoctorService
+    booking: BookingService
     slot_generator: SlotGenerator
     video: VideoService
     payment: PaymentService
@@ -52,6 +54,7 @@ def build_container(runtime: Runtime, clock: Clock | None = None) -> Container:
         auth=AuthService(uow, the_clock, runtime.jwt_secret, runtime.jwt_lifetime_minutes),
         profiles=ProfileService(uow, the_clock),
         doctors=DoctorService(uow, the_clock, slot_generator),
+        booking=BookingService(uow, the_clock),
         slot_generator=slot_generator,
         video=StubVideoService(runtime.video_base_url),
         payment=StubPaymentService(),

@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from telemed.repository.mappers import doctor_to_domain
 from telemed.repository.models import AvailabilityTemplate, DoctorProfile, Slot, User
+from telemed.types import domain
 from telemed.types.domain import DoctorSearch, DoctorSummary, StoredTemplate, TemplateSpec
 from telemed.types.enums import DoctorSort
 from telemed.types.ids import UserId
@@ -167,3 +168,8 @@ def list_doctor_templates(session: Session, doctor_id: UserId) -> list[TemplateR
         )
         for row in session.scalars(stmt)
     ]
+
+
+def get_profile(session: Session, doctor_id: UserId) -> domain.DoctorProfile | None:
+    row = session.get(DoctorProfile, doctor_id)
+    return None if row is None else doctor_to_domain(row)

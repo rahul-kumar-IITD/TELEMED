@@ -8,7 +8,7 @@ from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import Session
 
 from telemed.repository.mappers import slot_to_domain
-from telemed.repository.models import Slot
+from telemed.repository.models import Slot, User
 from telemed.types import domain
 from telemed.types.ids import SlotId, UserId
 
@@ -77,4 +77,27 @@ def get_owned(session: Session, slot_id: SlotId, doctor_id: UserId) -> domain.Sl
     row = session.scalars(
         select(Slot).where(Slot.slot_id == slot_id, Slot.doctor_id == doctor_id)
     ).first()
+    return None if row is None else slot_to_domain(row)
+
+
+def claim(session: Session, slot_id: SlotId, now: datetime, horizon: datetime) -> bool:
+    """Atomically AVAILABLE -> BOOKED if the slot is in (now, horizon) and its doctor is active.
+
+    One conditional UPDATE; True only when exactly one row changed.
+    """
+    active_doctors = select(User.user_id).where(User.active == 1)
+    stmt = (
+        update(Slot)
+        .where(
+            Slot.slot_id == slot_id, Slot.status == "AVAILABLE",
+            Slot.start_time > now, Slot.start_time < horizon,
+            Slot.doctor_id.in_(active_doctors),
+        )
+        .values(status="BOOKED", updated_at=now)
+    )
+    return cast(CursorResult[Any], session.execute(stmt)).rowcount == 1
+
+
+def get(session: Session, slot_id: SlotId) -> domain.Slot | None:
+    row = session.get(Slot, slot_id)
     return None if row is None else slot_to_domain(row)

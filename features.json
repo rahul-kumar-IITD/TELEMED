@@ -1075,8 +1075,8 @@
       "Assert the slot is BOOKED",
       "Assert exactly one appointment_events row of type BOOKED"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T04:30:35Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1099,8 +1099,8 @@
       "Assert zero 503",
       "Assert exactly one appointment row exists"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T04:30:35Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1120,8 +1120,8 @@
       "Assert 409 for each",
       "Assert appointment count is unchanged"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T04:30:35Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1142,8 +1142,8 @@
       "Assert 409",
       "Assert the slot is still AVAILABLE"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T04:30:35Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1162,8 +1162,8 @@
       "POST as doctor and assert 403",
       "POST with no token and assert 401"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T04:30:35Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -1184,8 +1184,8 @@
       "Assert the spy charge call count is 1",
       "Assert the response fee equals the doctor's fee string"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T04:30:35Z",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [

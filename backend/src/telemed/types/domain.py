@@ -172,3 +172,18 @@ class DoctorSearch:
     available_from: datetime | None = None
     available_to: datetime | None = None
     sort: DoctorSort = DoctorSort.EARLIEST_SLOT
+
+
+@dataclass(frozen=True)
+class AppointmentView:
+    """An appointment with the slot times, party names and caller-specific extras."""
+
+    appointment: Appointment
+    start_time: datetime
+    end_time: datetime
+    doctor_name: str
+    specialty: str
+    patient_name: str
+    allowed_actions: tuple[str, ...]
+    join_url: str | None
+    change_deadline: datetime

@@ -4,6 +4,7 @@ from collections.abc import Callable
 from fastapi import Depends, HTTPException, Request
 
 from telemed.service.auth_service import AuthService
+from telemed.service.booking_service import BookingService
 from telemed.service.container import Container
 from telemed.service.doctor_service import DoctorService
 from telemed.service.integrations.interfaces import (
@@ -33,6 +34,10 @@ def get_profile_service(container: Container = Depends(get_container)) -> Profil
 
 def get_doctor_service(container: Container = Depends(get_container)) -> DoctorService:
     return container.doctors
+
+
+def get_booking_service(container: Container = Depends(get_container)) -> BookingService:
+    return container.booking
 
 
 def get_video_service(container: Container = Depends(get_container)) -> VideoService:
