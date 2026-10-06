@@ -2648,7 +2648,7 @@
       "Assert two projects with viewport widths 1280 and 375",
       "Assert timezoneId is set and the clock is fixed in test setup"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -2673,7 +2673,7 @@
       "Assert the flow passes on the desktop project",
       "Assert it passes on the mobile project"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -2699,7 +2699,7 @@
       "Assert NO_SHOW is disabled before start",
       "Assert a note appears after COMPLETED"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -2724,7 +2724,7 @@
       "Assert the onboarded doctor appears",
       "Assert deactivate then reactivate completes"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
@@ -2748,7 +2748,7 @@
       "Run `npx playwright test --update-snapshots` once and verify baseline files exist for both viewports",
       "Run `npm test` in frontend and assert the six listed behaviours each have a passing test"
     ],
-    "passes": false,
+    "passes": true,
     "last_evaluated": null,
     "failure_reason": null,
     "failure_layer": null,
