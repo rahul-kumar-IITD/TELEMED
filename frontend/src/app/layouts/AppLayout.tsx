@@ -37,10 +37,25 @@ export function AppLayout() {
                   Doctors
                 </NavLink>
               )}
+              {session.role === "PATIENT" && (
+                <>
+                  <NavLink to={PATHS.appointments} className={linkClass}>
+                    My appointments
+                  </NavLink>
+                  <NavLink to={PATHS.profile} className={linkClass}>
+                    Profile
+                  </NavLink>
+                </>
+              )}
               {session.role === "DOCTOR" && (
-                <NavLink to={PATHS.queue} className={linkClass}>
-                  Queue
-                </NavLink>
+                <>
+                  <NavLink to={PATHS.queue} end className={linkClass}>
+                    Queue
+                  </NavLink>
+                  <NavLink to={PATHS.slots} className={linkClass}>
+                    Slots
+                  </NavLink>
+                </>
               )}
               {session.role === "ADMIN" && (
                 <>

@@ -83,6 +83,7 @@ def _counts(engine: Engine) -> tuple[int, int, int, int]:
 
 
 @pytest.mark.ac("AC-E2-S2-1")
+@pytest.mark.ac("AC-10")
 def test_onboard_returns_201_stores_fee_and_generates_slots(
     client: TestClient, engine: Engine, admin: dict[str, str]
 ) -> None:

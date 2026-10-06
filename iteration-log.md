@@ -8,3 +8,6 @@ E3-S4, E3-S5, E5-S5. Gates: pytest 408 pass, 100% cov, ruff, mypy, import-linter
 
 ## Group I - 2026-10-06 - PASS
 Stories E4-S1, E4-S3. Contract negotiated, 434 tests pass, coverage 100%, ruff/mypy/lint-imports clean, live evaluator PASS (I-API-0..12).
+
+## Group J - 2026-10-06 - PASS (lean)
+Stories E5-S3, E5-S4, E6-S2. pytest 442 pass, 100% cov (domain gate 95%), ruff, mypy, import-linter (3 contracts), vitest 88, eslint, tsc. Evaluator PASS on J-API-0..13 and Playwright 1280/375. Note: first evaluator run died on API network error, retried.

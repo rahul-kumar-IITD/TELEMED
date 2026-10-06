@@ -119,6 +119,7 @@ def _book(client: TestClient, headers: Headers, slot_id: object) -> tuple[int, d
     return response.status_code, response.json()
 
 
+@pytest.mark.ac("AC-04")
 def test_book_available_slot_creates_appointment_and_event(
     client: TestClient, engine: Engine, doctor: dict[str, object], patient: Headers,
     payment: SpyPayment,
@@ -159,6 +160,7 @@ def test_payment_charged_once_on_success_and_never_on_conflict(
     assert len(payment.calls) == 1
 
 
+@pytest.mark.nfr("NFR-08")
 def test_twenty_concurrent_bookings_one_winner(
     client: TestClient, engine: Engine, doctor: dict[str, object], payment: SpyPayment,
 ) -> None:
@@ -182,6 +184,7 @@ def test_twenty_concurrent_bookings_one_winner(
 
 
 @pytest.mark.parametrize("state", ["BOOKED", "BLOCKED"])
+@pytest.mark.ac("AC-05")
 def test_non_available_slot_is_409(
     client: TestClient, engine: Engine, doctor: dict[str, object], patient: Headers, state: str,
 ) -> None:

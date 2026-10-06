@@ -36,6 +36,7 @@ def _booked(
 
 
 @pytest.mark.ac("E3-S5-AC1")
+@pytest.mark.ac("AC-08")
 def test_full_happy_path_one_doctor_event_per_transition(
     client: TestClient, engine: Engine, doctor: Doctor, patient: Headers
 ) -> None:

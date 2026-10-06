@@ -4,6 +4,9 @@ import { homeForRole, PATHS } from "../config/routes";
 import { useAuth } from "../hooks/useAuth";
 import type { Role } from "../types/contracts";
 import { AppLayout } from "./layouts/AppLayout";
+import { AppointmentDetailPage } from "./pages/doctor/AppointmentDetailPage";
+import { QueuePage } from "./pages/doctor/QueuePage";
+import { SlotCalendarPage } from "./pages/doctor/SlotCalendarPage";
 import { OnboardDoctorPage } from "./pages/admin/OnboardDoctorPage";
 import { UserListPage } from "./pages/admin/UserListPage";
 import { LoginPage } from "./pages/auth/LoginPage";
@@ -11,7 +14,9 @@ import { RegisterPage } from "./pages/auth/RegisterPage";
 import { BookingConfirmationPage } from "./pages/patient/BookingConfirmationPage";
 import { DoctorDetailPage } from "./pages/patient/DoctorDetailPage";
 import { DoctorSearchPage } from "./pages/patient/DoctorSearchPage";
-import { ResourceShell } from "./pages/shell/ResourceShell";
+import { MyAppointmentsPage } from "./pages/patient/MyAppointmentsPage";
+import { NotesPage } from "./pages/patient/NotesPage";
+import { ProfilePage } from "./pages/patient/ProfilePage";
 import { NotAllowedPage } from "./pages/system/NotAllowedPage";
 import { NotFoundPage } from "./pages/system/NotFoundPage";
 
@@ -47,11 +52,15 @@ export function AppRoutes() {
           <Route path="doctors/:doctor_id" element={<DoctorDetailPage />} />
           <Route path="doctors/:doctor_id/book/:slot_id" element={<BookingConfirmationPage />} />
         </Route>
+        <Route element={<RequireRole roles={["PATIENT"]} />}>
+          <Route path="appointments" element={<MyAppointmentsPage />} />
+          <Route path="appointments/:appointment_id/notes" element={<NotesPage />} />
+          <Route path="profile" element={<ProfilePage />} />
+        </Route>
         <Route element={<RequireRole roles={["DOCTOR"]} />}>
-          <Route
-            path="queue"
-            element={<ResourceShell title="Daily queue" path="/api/doctors/me/queue" emptyMessage="No appointments today." />}
-          />
+          <Route path="queue" element={<QueuePage />} />
+          <Route path="queue/:appointment_id" element={<AppointmentDetailPage />} />
+          <Route path="slots" element={<SlotCalendarPage />} />
         </Route>
         <Route element={<RequireRole roles={["ADMIN"]} />}>
           <Route path="admin/users" element={<UserListPage />} />

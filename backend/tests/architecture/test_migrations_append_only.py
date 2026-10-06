@@ -35,6 +35,7 @@ def _manifest() -> ModuleType:
 
 
 @pytest.mark.ac("AC-E1-S1-6")
+@pytest.mark.nfr("NFR-05")
 def test_committed_revisions_unmodified_and_present() -> None:
     assert _manifest().violations() == []
 

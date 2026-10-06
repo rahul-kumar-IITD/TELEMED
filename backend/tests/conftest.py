@@ -120,3 +120,10 @@ def app_with_spies(spies: Spies) -> FastAPI:
     app.dependency_overrides[deps.get_prescription_service] = lambda: spies.prescription
     app.dependency_overrides[deps.get_notification_service] = lambda: spies.notification
     return app
+
+
+def pytest_sessionfinish(session: pytest.Session) -> None:
+    """Enforce the domain-layer coverage threshold after pytest-cov has finished."""
+    from tests.coverage_gate import enforce
+
+    enforce(session)

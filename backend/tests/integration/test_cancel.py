@@ -134,6 +134,7 @@ def _cancel(client: TestClient, headers: Headers | None, appointment_id: int) ->
 
 
 @pytest.mark.ac("E3-S3-AC1")
+@pytest.mark.ac("AC-06")
 def test_patient_cancel_at_exactly_sixty_minutes(
     client: TestClient, engine: Engine, doctor: Doctor, patient: Headers, payment: SpyPayment,
 ) -> None:

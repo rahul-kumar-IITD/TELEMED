@@ -56,6 +56,7 @@ def _counts(engine: Engine) -> tuple[int, int]:
 
 
 @pytest.mark.ac("AC-E1-S3-1")
+@pytest.mark.ac("AC-01")
 def test_register_returns_201_without_secrets(client: TestClient) -> None:
     response = client.post("/api/auth/register", json=_body())
     assert response.status_code == 201

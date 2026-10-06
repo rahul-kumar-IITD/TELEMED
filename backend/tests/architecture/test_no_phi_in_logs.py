@@ -32,6 +32,7 @@ def _lines(stream: io.StringIO) -> list[dict[str, object]]:
 
 
 @pytest.mark.ac("AC-E1-S2-3")
+@pytest.mark.nfr("NFR-03")
 def test_request_with_phi_body_logs_json_without_phi(stream: io.StringIO) -> None:
     app: FastAPI = create_app()  # bootstrap() reconfigures logging to stdout ...
     configure_logging(stream=stream)  # ... so capture into the buffer afterwards

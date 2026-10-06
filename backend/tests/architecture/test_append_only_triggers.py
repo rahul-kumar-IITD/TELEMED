@@ -55,6 +55,7 @@ def conn(db_path: Path) -> sqlite3.Connection:
 
 @pytest.mark.ac("AC-E1-S1-2")
 @pytest.mark.parametrize("table", sorted(APPEND_ONLY_TABLES))
+@pytest.mark.nfr("NFR-02")
 def test_update_and_delete_rejected(conn: sqlite3.Connection, table: str) -> None:
     column = ROWS[table][1]
     before = conn.execute(f"SELECT * FROM {table}").fetchall()

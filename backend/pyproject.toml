@@ -45,6 +45,12 @@ source = ["src/telemed"]
 fail_under = 80
 show_missing = true
 
+# coverage.py supports a single fail_under, so the domain-layer gate is a second threshold
+# enforced by tests/coverage_gate.py (run at session end whenever --cov is active).
+[tool.telemed.coverage]
+domain_fail_under = 95
+domain_include = ["*/telemed/types/*"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"
@@ -79,3 +85,9 @@ source_modules = ["telemed.api"]
 forbidden_modules = ["telemed.repository", "telemed.config"]
 # api -> service -> config is the sanctioned route (service.bootstrap hands config values up)
 allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Repository must not import Service"
+type = "forbidden"
+source_modules = ["telemed.repository"]
+forbidden_modules = ["telemed.service"]

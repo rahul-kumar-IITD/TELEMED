@@ -43,6 +43,7 @@ def _setup(
 
 
 @pytest.mark.ac("E3-S4-AC1")
+@pytest.mark.ac("AC-07")
 def test_reschedule_moves_slots_keeps_id(
     client: TestClient, engine: Engine, doctor: Doctor, patient: Headers
 ) -> None:

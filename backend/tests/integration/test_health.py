@@ -8,6 +8,7 @@ from telemed.api.app import create_app
 
 
 @pytest.mark.ac("AC-E1-S2-1")
+@pytest.mark.nfr("NFR-07")
 def test_health_ok_within_one_second() -> None:
     started = time.perf_counter()
     client = TestClient(create_app())

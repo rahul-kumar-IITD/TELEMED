@@ -11,6 +11,7 @@ SRC = Path(__file__).resolve().parents[2] / "src" / "telemed"
 
 
 @pytest.mark.ac("AC-E1-S1-3")
+@pytest.mark.nfr("NFR-01")
 def test_decimal_round_trip() -> None:
     assert to_minor(Decimal("500.00")) == 50000
     assert from_minor(50000) == Decimal("500.00")

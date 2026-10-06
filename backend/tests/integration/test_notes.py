@@ -36,6 +36,7 @@ def _count(engine: Engine) -> int:
 
 
 @pytest.mark.ac("E4-S1-AC1")
+@pytest.mark.ac("AC-09")
 def test_doctor_appends_notes_which_accumulate(
     client: TestClient, engine: Engine, completed: Done
 ) -> None:
@@ -105,6 +106,7 @@ def test_text_length_boundaries(client: TestClient, engine: Engine, completed: D
 
 @pytest.mark.ac("E4-S1-AC4")
 @pytest.mark.parametrize("method", ["PUT", "PATCH", "DELETE"])
+@pytest.mark.nfr("NFR-08")
 def test_note_mutation_methods_are_405(
     client: TestClient, engine: Engine, completed: Done, method: str
 ) -> None:

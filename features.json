@@ -2106,8 +2106,8 @@
       "Assert each card displays the status as text",
       "Assert 'Join video visit' exists on the three active cards and not on the three terminal cards"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942279+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2128,8 +2128,8 @@
       "Assert Cancel and Reschedule are disabled and an explanation is visible",
       "Render one starting in 61 minutes and assert both enabled"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942296+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2149,8 +2149,8 @@
       "Click Cancel and Confirm with the API mocked to 200 and assert the card shows CANCELLED",
       "Mock 409 and assert the inline message and unchanged status"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942300+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2172,8 +2172,8 @@
       "Confirm",
       "Assert the card time equals the new slot time"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942302+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2194,8 +2194,8 @@
       "Assert both note texts are shown",
       "Assert no edit, delete or input controls are present"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942304+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2216,8 +2216,8 @@
       "Assert a success message",
       "Reload the page and assert the new value is displayed"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942306+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2238,8 +2238,8 @@
       "Pick a date",
       "Assert listed times carry the provider timezone label such as 'IST' or 'UTC'"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942307+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2257,8 +2257,8 @@
       "Render a row with allowed_actions ['CHECKED_IN'] and assert exactly one action button",
       "Render a BOOKED row before start and assert Mark NO_SHOW is disabled with explanatory text"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942309+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2276,8 +2276,8 @@
       "Click Check in with the API mocked to 200 and assert the row status",
       "Mock 409 and assert the inline message and a queue refetch"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942311+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2296,8 +2296,8 @@
       "Click Unblock and assert AVAILABLE",
       "Assert a BOOKED slot's block control is disabled"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942313+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2316,8 +2316,8 @@
       "Open a COMPLETED appointment and assert the form",
       "Submit a note and assert it appears in the list with no edit or delete control"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942315+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2335,8 +2335,8 @@
       "Set viewport 1280x800 and assert the queue renders without overflow",
       "Set viewport 375x800 and assert scrollWidth <= clientWidth on queue, calendar and detail"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942316+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2507,8 +2507,8 @@
       "Run `uv run pytest --cov` on the full suite and assert exit code 0",
       "Temporarily lower coverage via a skipped test module in a scratch run and assert a non-zero exit"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942319+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2542,8 +2542,8 @@
       "Run the traceability script and assert it lists all ten AC ids with a test count >= 1",
       "Remove one tag in a scratch copy and assert exit code is non-zero"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942321+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2577,8 +2577,8 @@
       "Run uv run lint-imports and assert exit 0",
       "Add a forbidden import in a scratch copy and assert a contract violation and non-zero exit"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942323+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2612,8 +2612,8 @@
       "Run mypy --strict src/ and assert 'Success'",
       "Run ruff check . and assert exit 0"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942324+00:00",
     "failure_reason": null,
     "failure_layer": null,
     "criteria": [
@@ -2840,8 +2840,8 @@
       "Run the traceability check on the full suite and assert exit code 0",
       "Remove one NFR tag in a scratch run and assert a non-zero exit naming it"
     ],
-    "passes": false,
-    "last_evaluated": null,
+    "passes": true,
+    "last_evaluated": "2026-10-06T10:30:21.942327+00:00",
     "failure_reason": null,
     "failure_layer": null
   }

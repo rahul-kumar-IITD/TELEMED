@@ -154,3 +154,24 @@ export interface ProfileUpdate {
   gender: Gender;
   phone: string;
 }
+
+export interface ConsultationNote {
+  note_id: number;
+  appointment_id: number;
+  author_id: number;
+  text: string;
+  created_at: string;
+}
+
+export interface QueueResponse extends ListResponse<Appointment> {
+  date: string; // YYYY-MM-DD in the provider timezone
+  timezone: string; // IANA name, e.g. "Asia/Kolkata"
+}
+
+export interface AppConfig {
+  provider_timezone: string;
+  slot_window_days: number;
+  change_window_minutes: number;
+}
+
+export type StatusTarget = "CHECKED_IN" | "IN_PROGRESS" | "COMPLETED" | "NO_SHOW" | "CANCELLED";

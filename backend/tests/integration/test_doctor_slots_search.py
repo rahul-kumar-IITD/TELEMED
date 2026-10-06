@@ -273,6 +273,7 @@ def _names(response: Any) -> list[str]:
 
 
 @pytest.mark.ac("AC-E2-S4-1")
+@pytest.mark.ac("AC-02")
 def test_filter_by_specialty_and_language(
     client: TestClient, docs: dict[str, dict[str, Any]], patient: dict[str, str]
 ) -> None:
@@ -357,6 +358,7 @@ def test_summary_shape_fee_string_earliest_and_deactivated_hidden(
 
 
 @pytest.mark.ac("AC-E2-S4-5")
+@pytest.mark.ac("AC-03")
 def test_open_slots_only_available_future_within_14_days(
     client: TestClient, docs: dict[str, dict[str, Any]], patient: dict[str, str], engine: Engine
 ) -> None:

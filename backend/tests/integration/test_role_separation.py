@@ -252,6 +252,7 @@ def test_role_from_db_is_used_and_reread_each_request(env: Env, people: dict[str
 
 
 @pytest.mark.ac("AC-E1-S4-3")
+@pytest.mark.nfr("NFR-04")
 def test_wrong_role_is_forbidden(env: Env, people: dict[str, int]) -> None:
     patient = _headers(env.token(people["p1"], "PATIENT"))
     doctor = _headers(env.token(people["doc"], "DOCTOR"))

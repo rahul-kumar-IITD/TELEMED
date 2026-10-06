@@ -42,6 +42,7 @@ def test_invalid_incoming_id_replaced(client: TestClient, value: str) -> None:
 
 
 @pytest.mark.ac("AC-E1-S2-2")
+@pytest.mark.nfr("NFR-06")
 def test_missing_id_generated(client: TestClient) -> None:
     first = client.get("/health").headers[H]
     second = client.get("/health").headers[H]
